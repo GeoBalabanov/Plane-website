@@ -88,7 +88,35 @@ a{color:inherit}
 #boarding .scrollhint{position:absolute;right:var(--gutter);bottom:15vh;width:min(320px,40vw);border-top:1px solid rgba(244,241,234,.5);padding-top:12px;display:flex;justify-content:space-between}
 .factchip{position:absolute;right:var(--gutter);top:24vh;width:min(330px,80vw);padding:20px 22px;display:grid;gap:10px}
 .factchip .big{font-size:clamp(30px,3vw,44px);font-weight:500;font-stretch:125%;letter-spacing:-.03em;line-height:1}
-#boarding .veil{position:absolute;inset:0;background:#e9e4dc;opacity:0;pointer-events:none}
+#boarding .veil{position:absolute;inset:0;background:#0b0a09;opacity:0;pointer-events:none}
+
+/* 1b. cabin tour */
+#cabin{height:640vh}
+#cabin .stage{background:#0b0a09}
+.cam{position:absolute;left:50%;top:50%;width:max(100vw,179.17vh);aspect-ratio:1376/768;transform-origin:50% 33%;container-type:inline-size}
+.cam>img,.shot img{width:100%;height:100%;display:block;object-fit:cover}
+.shot{position:absolute;inset:0;opacity:0}
+.shot img{transform-origin:50% 45%}
+.machdisplay{position:absolute;left:47.3%;top:28.8%;width:5.6%;height:6%;background:#040404;border-radius:.25cqw;display:grid;place-content:center;gap:.15cqw;
+  font:500 .62cqw/1 var(--mono);letter-spacing:.06em;color:#ff9a4d;text-shadow:0 0 .5cqw rgba(255,120,40,.85);text-align:center;box-shadow:0 0 0 .12cqw #2a2a2a}
+.hot{position:absolute;width:0;height:0;opacity:0;transition:opacity .2s linear}
+.hot .ring{position:absolute;left:-15px;top:-15px;width:30px;height:30px;border-radius:50%;border:1.5px solid #fff;background:rgba(255,255,255,.16);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.hot .ring::after{content:"";position:absolute;inset:-1.5px;border-radius:50%;border:1.5px solid #fff;animation:ping 2.2s cubic-bezier(.2,.7,.3,1) infinite}
+.hot .tag{position:absolute;left:24px;top:-12px;white-space:nowrap;font:500 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:#fff;
+  padding:6px 10px;border-radius:999px;background:rgba(10,10,10,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.hot.left .tag{left:auto;right:24px}
+@keyframes ping{0%{transform:scale(1);opacity:.9}100%{transform:scale(2.4);opacity:0}}
+#cabin .shade-b{position:absolute;inset:0;background:linear-gradient(180deg,rgba(11,10,9,.55) 0%,rgba(11,10,9,0) 26%,rgba(11,10,9,0) 55%,rgba(11,10,9,.8) 100%);pointer-events:none}
+#cabin .intro-title{position:absolute;left:var(--gutter);top:16vh;display:grid;gap:12px;max-width:min(760px,90vw)}
+#cabin .intro-title h2{margin:0;font-weight:500;font-stretch:125%;letter-spacing:-.04em;line-height:.9;font-size:clamp(46px,8vw,132px)}
+.tourcard{position:absolute;left:var(--gutter);bottom:13vh;width:min(400px,calc(100vw - 2*var(--gutter)));padding:20px 22px;border-radius:20px;opacity:0;
+  background:rgba(14,13,12,.58);-webkit-backdrop-filter:blur(18px) saturate(1.2);backdrop-filter:blur(18px) saturate(1.2);border:1px solid rgba(255,255,255,.14);display:grid;gap:10px}
+.tourcard .row{display:flex;justify-content:space-between;gap:12px;color:var(--mist)}
+.tourcard h3{margin:0;font-weight:500;font-stretch:125%;letter-spacing:-.03em;font-size:clamp(24px,2.2vw,32px);line-height:1}
+.tourcard p{margin:0;font-size:15px;line-height:1.5;color:rgba(244,241,234,.86)}
+.tourcard .dots{display:flex;gap:6px}
+.tourcard .dots i{width:18px;height:2px;background:rgba(244,241,234,.25)}
+.tourcard .dots i.on{background:var(--flame)}
 
 /* 2. droop */
 #droop{height:420vh}
@@ -198,6 +226,7 @@ a{color:inherit}
 <header class="nav">
   <ul>
     <li><a href="#boarding">Boarding</a></li>
+    <li><a href="#cabin">Cabin</a></li>
     <li><a href="#droop">Droop nose</a></li>
     <li><a href="#mach2">Mach 2</a></li>
     <li><a href="#arrival">Arrival</a></li>
@@ -212,7 +241,7 @@ a{color:inherit}
   <span>Time</span><span id="hud-time">T+0:00</span>
 </div>
 <div class="stagebar" aria-hidden="true">
-  <div class="row"><span id="stage-name">Boarding</span><span id="stage-num">1 / 6</span></div>
+  <div class="row"><span id="stage-name">Boarding</span><span id="stage-num">1 / 7</span></div>
   <div class="track"><div class="fill" id="stage-fill"></div></div>
 </div>
 <div class="cta">
@@ -242,6 +271,34 @@ a{color:inherit}
         <p class="copy" style="margin:0">Concorde's windows were tiny because of the pressure difference at about 60,000 ft.</p>
       </div>
       <div class="veil" id="veil"></div>
+    </div>
+  </section>
+
+  <!-- 1b. Cabin tour -->
+  <section class="scene" id="cabin" data-name="Cabin">
+    <div class="stage">
+      <div class="cam will" id="camA">
+        <img src="assets/cabin.webp" alt="Concorde's narrow cabin seen down the aisle, two seats on each side" width="1376" height="768">
+        <div class="machdisplay" aria-hidden="true"><span id="cab-mach">MACH 0.00</span><span>0 FT</span></div>
+        <div class="hot" data-stop="0" style="left:70%;top:63%"><span class="ring"></span><span class="tag">Seats</span></div>
+        <div class="hot" data-stop="1" style="left:24.5%;top:46.5%"><span class="ring"></span><span class="tag">Window</span></div>
+        <div class="hot" data-stop="2" style="left:42%;top:21%"><span class="ring"></span><span class="tag">Ceiling</span></div>
+        <div class="hot" data-stop="3" style="left:53.5%;top:31.5%"><span class="ring"></span><span class="tag">Speed display</span></div>
+      </div>
+      <div class="shot" id="shotB"><img class="will" id="imgB" src="assets/cabin-seat.webp" alt="Two leather seats beside a small oval window, a linen napkin on the tray" width="1376" height="768"></div>
+      <div class="shot" id="shotC"><img class="will" id="imgC" src="assets/flightdeck.webp" alt="Concorde's flight deck full of analogue dials" width="1376" height="768"></div>
+      <div class="shade-b"></div>
+      <div class="intro-title will" id="cab-intro">
+        <span class="label">Cabin tour</span>
+        <h2>Step inside</h2>
+        <p class="copy" style="margin:0;color:var(--mist)">A short walk through the cabin before take-off. Scroll to move down the aisle.</p>
+      </div>
+      <article class="tourcard"><div class="row label"><span>Cabin tour</span><span>1 / 6</span></div><h3>Four across</h3><p>Two seats, the aisle, two seats. Room for about 100 passengers, and every seat is next to a window or the aisle.</p></article>
+      <article class="tourcard"><div class="row label"><span>Cabin tour</span><span>2 / 6</span></div><h3>Small for a reason</h3><p>The windows are tiny because of the pressure difference at about 60,000 ft.</p></article>
+      <article class="tourcard"><div class="row label"><span>Cabin tour</span><span>3 / 6</span></div><h3>Built narrow</h3><p>The cabin is narrow and the ceiling is low. The whole aircraft is shaped to slip through the air at Mach 2.</p></article>
+      <article class="tourcard"><div class="row label"><span>Cabin tour</span><span>4 / 6</span></div><h3>Your speed on the wall</h3><p>A display at the front shows the speed in Mach. On this flight it will pass 2.00.</p></article>
+      <article class="tourcard"><div class="row label"><span>Cabin tour</span><span>5 / 6</span></div><h3>Seat 1A</h3><p>Leather seats, real glasses, a linen napkin. The service had to be quick: London to New York took about 3.5 hours.</p></article>
+      <article class="tourcard"><div class="row label"><span>Cabin tour</span><span>6 / 6</span></div><h3>Three crew up front</h3><p>Captain, first officer and flight engineer, surrounded by analogue dials. No screens, only needles.</p></article>
     </div>
   </section>
 
@@ -558,6 +615,24 @@ a{color:inherit}
       $('veil').style.opacity = seg(p, .78, .98);
       viewOn = p < 1 && $('boarding').getBoundingClientRect().bottom > 0;
     }
+    // ---- 1b cabin tour
+    { const p = P.cabin;
+      const STOPS = [[.07,.17],[.19,.29],[.31,.41],[.43,.54],[.61,.74],[.82,.97]];
+      const w = ([a, b]) => seg(p, a - .025, a) * (1 - seg(p, b, b + .025));
+      const walk = ease(seg(p, 0, .58));
+      set($('camA'), `translate(-50%,-50%) scale(${RM ? 1 : 1.04 + walk * .5}) translateY(${walk * 2}%)`, 1 - seg(p, .56, .61));
+      $('shotB').style.opacity = seg(p, .56, .61) * (1 - seg(p, .76, .81));
+      $('shotC').style.opacity = seg(p, .76, .81);
+      if (!RM) {
+        $('imgB').style.transform = `scale(${1.14 - .1 * seg(p, .56, .8)}) translateX(${lerp(-2, 2, seg(p, .56, .8))}%)`;
+        $('imgC').style.transform = `scale(${1.16 - .14 * seg(p, .76, 1)})`;
+      }
+      $('cab-intro').style.opacity = 1 - seg(p, .02, .07);
+      document.querySelectorAll('#cabin .hot').forEach(h => h.style.opacity = w(STOPS[+h.dataset.stop]));
+      document.querySelectorAll('#cabin .tourcard').forEach((c, i) => {
+        const o = w(STOPS[i]); c.style.opacity = o; c.style.transform = `translateY(${(1 - o) * 16}px)`;
+      });
+    }
     // ---- 2 droop
     { const p = P.droop;
       const angle = p < .4 ? lerp(0, 5, ease(seg(p, .06, .38))) : lerp(5, 12.5, ease(seg(p, .52, .86)));
@@ -624,14 +699,15 @@ a{color:inherit}
     if (k[3] > 0) { alt = lerp(50000, 60000, k[3]); mach = lerp(1.7, 2, k[3]); }
     if (k[4] > 0) { alt = 60000; mach = 2; }
     if (k[5] > 0) { alt = lerp(60000, 0, k[5]); mach = lerp(2, 0, k[5]); }
-    const total = k.reduce((s, v) => s + v, 0) / 6;
+    const k2 = [P.boarding, P.cabin, P.droop, P.boom, P.mach2, P.cruise, P.arrival];
+    const total = k2.reduce((s, v) => s + v, 0) / 7;
     $('hud-alt').textContent = (Math.round(alt / 100) * 100).toLocaleString('en-GB') + ' ft';
     $('hud-mach').textContent = mach.toFixed(2);
     $('hud-time').textContent = fmtTime(total * 210);
-    let idx = k.findIndex(v => v < 1); if (idx === -1) idx = 5;
-    const names = ['Boarding','Take-off','Supersonic','Mach 2','Cruise','Arrival'];
+    let idx = k2.findIndex(v => v < 1); if (idx === -1) idx = 6;
+    const names = ['Boarding','Cabin','Take-off','Supersonic','Mach 2','Cruise','Arrival'];
     $('stage-name').textContent = names[idx];
-    $('stage-num').textContent = `${idx + 1} / 6`;
+    $('stage-num').textContent = `${idx + 1} / 7`;
     $('stage-fill').style.width = (total * 100).toFixed(1) + '%';
     const atEnd = $('end').getBoundingClientRect().top < vh * .5;
     $('cta-next').textContent = atEnd ? 'Replay the flight' : (y < 10 ? 'Begin the flight' : 'Next scene');
