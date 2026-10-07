@@ -93,13 +93,8 @@ a{color:inherit}
 /* 1b. cabin tour */
 #cabin{height:640vh}
 #cabin .stage{background:#0b0a09}
-.cam{position:absolute;left:50%;top:50%;width:max(100vw,179.17vh);aspect-ratio:1376/768;transform-origin:50% 33%;container-type:inline-size}
-.cam>img,.shot img{width:100%;height:100%;display:block;object-fit:cover}
-.shot{position:absolute;inset:0;opacity:0}
-.shot img{transform-origin:50% 45%}
-.machdisplay{position:absolute;left:47.3%;top:28.8%;width:5.6%;height:6%;background:#040404;border-radius:.25cqw;display:grid;place-content:center;gap:.15cqw;
-  font:500 .62cqw/1 var(--mono);letter-spacing:.06em;color:#ff9a4d;text-shadow:0 0 .5cqw rgba(255,120,40,.85);text-align:center;box-shadow:0 0 0 .12cqw #2a2a2a}
-.hot{position:absolute;width:0;height:0;opacity:0;transition:opacity .2s linear}
+.gl{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hot{position:absolute;left:0;top:0;width:0;height:0;opacity:0;pointer-events:none;will-change:transform,opacity}
 .hot .ring{position:absolute;left:-15px;top:-15px;width:30px;height:30px;border-radius:50%;border:1.5px solid #fff;background:rgba(255,255,255,.16);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
 .hot .ring::after{content:"";position:absolute;inset:-1.5px;border-radius:50%;border:1.5px solid #fff;animation:ping 2.2s cubic-bezier(.2,.7,.3,1) infinite}
 .hot .tag{position:absolute;left:24px;top:-12px;white-space:nowrap;font:500 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:#fff;
@@ -120,15 +115,13 @@ a{color:inherit}
 
 /* 2. droop */
 #droop{height:420vh}
-#droop .stage{background:#e9e4dc;color:#141210}
-#droop .photo{position:absolute;inset:-6%;width:112%;height:112%;object-fit:cover;object-position:62% 46%}
-#droop .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(240,236,228,.86) 0%,rgba(240,236,228,.15) 34%,rgba(240,236,228,0) 60%,rgba(240,236,228,.55) 100%)}
+#droop .stage{background:linear-gradient(180deg,#f4f0e9 0%,#ece6dd 52%,#e4ded4 100%);color:#141210}
+#droop .shade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(244,240,233,.7) 0%,rgba(244,240,233,0) 30%,rgba(244,240,233,0) 70%,rgba(228,222,212,.6) 100%)}
 #droop .head{position:absolute;left:var(--gutter);top:13vh;max-width:min(860px,92vw)}
 #droop h2{margin:10px 0 0;font-weight:500;font-stretch:125%;letter-spacing:-.035em;line-height:.92;font-size:clamp(40px,7.2vw,118px)}
 .nosepanel{position:absolute;right:var(--gutter);bottom:12vh;width:min(440px,calc(100vw - 2*var(--gutter)));padding:20px 22px 18px;display:grid;gap:12px}
 .nosepanel .top{display:flex;justify-content:space-between;align-items:baseline;gap:16px}
 .readout{font-size:clamp(44px,4.6vw,64px);font-weight:500;font-stretch:125%;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums}
-.nosepanel svg{width:100%;height:auto;display:block}
 .ticks{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--graphite)}
 .ticks b{font-weight:500;color:#141210}
 .factbox{position:absolute;left:var(--gutter);bottom:12vh;width:min(380px,calc(100vw - 2*var(--gutter)));padding:20px 22px;display:grid;gap:8px}
@@ -152,11 +145,10 @@ a{color:inherit}
 #mach2 .stage{background:var(--pearl);color:#16120f}
 #mach2 .tintlayer{position:absolute;inset:0;pointer-events:none;mix-blend-mode:multiply;z-index:4;
   background:radial-gradient(80% 60% at 50% 30%,#fbf3f1 0%,transparent 60%),linear-gradient(180deg,#f5e9e8 0%,#efe2e6 45%,#e3dcea 100%)}
-.h-mach{position:absolute;top:44vh;margin:0;font-weight:400;font-stretch:125%;letter-spacing:-.04em;line-height:.9;font-size:clamp(46px,10vw,168px);z-index:2;white-space:nowrap}
+.h-mach{position:absolute;top:44vh;margin:0;font-weight:400;font-stretch:125%;letter-spacing:-.04em;line-height:.9;font-size:clamp(46px,10vw,168px);z-index:1;white-space:nowrap}
+#mach3d{z-index:2}
 #flyat{left:var(--gutter)}
 #machtwo{right:var(--gutter)}
-.plane{position:absolute;left:50%;top:0;height:132vh;aspect-ratio:848/1264;z-index:1;transform-origin:50% 55%;mix-blend-mode:darken}
-.plane img{width:100%;height:100%}
 #mach2 .side-copy{position:absolute;left:var(--gutter);top:calc(44vh + clamp(60px,9vw,150px));z-index:3;display:grid;gap:8px}
 .spec{position:absolute;right:var(--gutter);top:calc(44vh + clamp(60px,9vw,150px));width:min(300px,42vw);z-index:3;font-size:12.5px}
 .spec h3{margin:0 0 10px;font:500 12px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;display:flex;justify-content:space-between;border-bottom:1px solid #16120f;padding-bottom:10px}
@@ -277,35 +269,30 @@ a{color:inherit}
   <!-- 1b. Cabin tour -->
   <section class="scene" id="cabin" data-name="Cabin">
     <div class="stage">
-      <div class="cam will" id="camA">
-        <img src="assets/cabin.webp" alt="Concorde's narrow cabin seen down the aisle, two seats on each side" width="1376" height="768">
-        <div class="machdisplay" aria-hidden="true"><span id="cab-mach">MACH 0.00</span><span>0 FT</span></div>
-        <div class="hot" data-stop="0" style="left:70%;top:63%"><span class="ring"></span><span class="tag">Seats</span></div>
-        <div class="hot" data-stop="1" style="left:24.5%;top:46.5%"><span class="ring"></span><span class="tag">Window</span></div>
-        <div class="hot" data-stop="2" style="left:42%;top:21%"><span class="ring"></span><span class="tag">Ceiling</span></div>
-        <div class="hot" data-stop="3" style="left:53.5%;top:31.5%"><span class="ring"></span><span class="tag">Speed display</span></div>
-      </div>
-      <div class="shot" id="shotB"><img class="will" id="imgB" src="assets/cabin-seat.webp" alt="Two leather seats beside a small oval window, a linen napkin on the tray" width="1376" height="768"></div>
-      <div class="shot" id="shotC"><img class="will" id="imgC" src="assets/flightdeck.webp" alt="Concorde's flight deck full of analogue dials" width="1376" height="768"></div>
+      <canvas class="gl" id="cabin3d" role="img" aria-label="A 3D walk down Concorde's cabin: two seats on each side of the aisle, tiny windows, overhead bins and a speed display on the front wall"></canvas>
+      <div class="hot" id="hot0"><span class="ring"></span><span class="tag">Seats</span></div>
+      <div class="hot left" id="hot1"><span class="ring"></span><span class="tag">Window</span></div>
+      <div class="hot" id="hot2"><span class="ring"></span><span class="tag">Ceiling</span></div>
+      <div class="hot" id="hot3"><span class="ring"></span><span class="tag">Speed display</span></div>
+      <div class="hot" id="hot4"><span class="ring"></span><span class="tag">Flight deck</span></div>
       <div class="shade-b"></div>
       <div class="intro-title will" id="cab-intro">
         <span class="label">Cabin tour</span>
         <h2>Step inside</h2>
         <p class="copy" style="margin:0;color:var(--mist)">A short walk through the cabin before take-off. Scroll to move down the aisle.</p>
       </div>
-      <article class="tourcard"><div class="row label"><span>Cabin tour</span><span>1 / 6</span></div><h3>Four across</h3><p>Two seats, the aisle, two seats. Room for about 100 passengers, and every seat is next to a window or the aisle.</p></article>
-      <article class="tourcard"><div class="row label"><span>Cabin tour</span><span>2 / 6</span></div><h3>Small for a reason</h3><p>The windows are tiny because of the pressure difference at about 60,000 ft.</p></article>
-      <article class="tourcard"><div class="row label"><span>Cabin tour</span><span>3 / 6</span></div><h3>Built narrow</h3><p>The cabin is narrow and the ceiling is low. The whole aircraft is shaped to slip through the air at Mach 2.</p></article>
-      <article class="tourcard"><div class="row label"><span>Cabin tour</span><span>4 / 6</span></div><h3>Your speed on the wall</h3><p>A display at the front shows the speed in Mach. On this flight it will pass 2.00.</p></article>
-      <article class="tourcard"><div class="row label"><span>Cabin tour</span><span>5 / 6</span></div><h3>Seat 1A</h3><p>Leather seats, real glasses, a linen napkin. The service had to be quick: London to New York took about 3.5 hours.</p></article>
-      <article class="tourcard"><div class="row label"><span>Cabin tour</span><span>6 / 6</span></div><h3>Three crew up front</h3><p>Captain, first officer and flight engineer, surrounded by analogue dials. No screens, only needles.</p></article>
+      <article class="tourcard"><div class="row label"><span>Cabin tour</span><span>1 / 5</span></div><h3>Four across</h3><p>Two seats, the aisle, two seats. Room for about 100 passengers, and every seat is next to a window or the aisle.</p></article>
+      <article class="tourcard"><div class="row label"><span>Cabin tour</span><span>2 / 5</span></div><h3>Small for a reason</h3><p>The windows are tiny because of the pressure difference at about 60,000 ft.</p></article>
+      <article class="tourcard"><div class="row label"><span>Cabin tour</span><span>3 / 5</span></div><h3>Built narrow</h3><p>The cabin is narrow and the ceiling is low. The whole aircraft is shaped to slip through the air at Mach 2.</p></article>
+      <article class="tourcard"><div class="row label"><span>Cabin tour</span><span>4 / 5</span></div><h3>Your speed on the wall</h3><p>A display at the front shows the speed in Mach. On this flight it will pass 2.00.</p></article>
+      <article class="tourcard"><div class="row label"><span>Cabin tour</span><span>5 / 5</span></div><h3>Three crew up front</h3><p>Behind this door: captain, first officer and flight engineer, surrounded by analogue dials.</p></article>
     </div>
   </section>
 
   <!-- 2. Take-off: the droop nose -->
   <section class="scene" id="droop" data-name="Take-off">
     <div class="stage">
-      <img class="photo will" id="droop-photo" src="assets/takeoff.webp" alt="Concorde lifting off the runway, nose high" width="1376" height="768">
+      <canvas class="gl" id="droop3d" role="img" aria-label="3D Concorde on the runway. As you scroll the nose lowers on its hinge, the plane rotates nose-high and the nose drops further for landing"></canvas>
       <div class="shade"></div>
       <div class="head">
         <span class="label">Take-off</span>
@@ -317,21 +304,7 @@ a{color:inherit}
       </div>
       <div class="nosepanel glass" id="nosepanel">
         <div class="top"><span class="label">Nose angle</span><span class="readout" id="readout">0.0°</span></div>
-        <svg viewBox="0 0 420 190" role="img" aria-label="Side view of Concorde's nose turning down on its hinge">
-          <g stroke="#8b847a" stroke-width="1" stroke-dasharray="3 4" fill="none">
-            <line x1="230" y1="92" x2="420" y2="92"/>
-            <line x1="230" y1="92" x2="419.3" y2="108.6"/>
-            <line x1="230" y1="92" x2="415.5" y2="133.1"/>
-          </g>
-          <path id="sight" d="M222 74 L600 74" stroke="#ff5a1f" stroke-width="1.6" stroke-dasharray="6 5" fill="none"/>
-          <path d="M0 78 L208 78 L220 71 L230 80 L230 104 L0 106 Z" fill="#141210"/>
-          <path d="M214 76 L222 72 L226 77 Z" fill="#9fb4c8"/>
-          <g id="nose"><path d="M230 80 L290 82.5 L350 88 L408 92 L350 97 L290 101 L230 104 Z" fill="#141210"/></g>
-          <circle cx="230" cy="92" r="4.5" fill="#f6f4ef" stroke="#ff5a1f" stroke-width="2"/>
-          <text x="236" y="182" font-family="IBM Plex Mono, monospace" font-size="11" fill="#55504a" letter-spacing=".08em">HINGE</text>
-          <text id="sight-label" x="12" y="182" font-family="IBM Plex Mono, monospace" font-size="11" fill="#b43e10" letter-spacing=".08em">PILOT'S LINE OF SIGHT</text>
-        </svg>
-        <div class="ticks"><span><b>0°</b> nose up</span><span><b>5°</b> take-off</span><span><b>12.5°</b> landing</span></div>
+                <div class="ticks"><span><b>0°</b> nose up</span><span><b>5°</b> take-off</span><span><b>12.5°</b> landing</span></div>
       </div>
     </div>
   </section>
@@ -355,7 +328,7 @@ a{color:inherit}
     <div class="stage">
       <h2 class="h-mach will" id="flyat">Fly at</h2>
       <h2 class="h-mach will" id="machtwo">Mach 2</h2>
-      <div class="plane will" id="plane"><img src="assets/concorde-top.webp" alt="Concorde seen from above, delta wing spread" width="848" height="1264"></div>
+      <canvas class="gl" id="mach3d" role="img" aria-label="3D Concorde seen from above with reheat on, rising between the words and spreading its delta wing"></canvas>
       <div class="side-copy will" id="sidecopy">
         <span class="label">Cruise</span>
         <p class="copy" style="margin:0">Twice the speed of sound, on a delta wing built for it.</p>
@@ -437,6 +410,8 @@ a{color:inherit}
   </section>
 </main>
 
+<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script src="js/concorde3d.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
 <script>
 (() => {
@@ -486,21 +461,6 @@ a{color:inherit}
   const set = (el, tf, op) => { el.style.transform = tf; if (op !== undefined) el.style.opacity = op; };
   const fmtTime = m => `T+${Math.floor(m/60)}:${String(Math.floor(m%60)).padStart(2,'0')}`;
 
-  // droop nose geometry (SVG coords)
-  const nosePts = [[0,-12],[60,-9.5],[120,-4],[178,0]];
-  const eye = [222, 74];
-  function droop(angle) {
-    $('nose').setAttribute('transform', `rotate(${angle} 230 92)`);
-    const r = angle * Math.PI / 180;
-    let a = Infinity;
-    for (const [x, y] of [...nosePts, [0,-12]]) {
-      const px = 230 + x*Math.cos(r) - y*Math.sin(r), py = 92 + x*Math.sin(r) + y*Math.cos(r);
-      a = Math.min(a, Math.atan2(py - eye[1], px - eye[0]));
-    }
-    const L = 420;
-    $('sight').setAttribute('d', `M${eye[0]} ${eye[1]} L${eye[0] + L*Math.cos(a)} ${eye[1] + L*Math.sin(a)}`);
-    $('readout').textContent = angle.toFixed(1) + '°';
-  }
 
 
   // ---------- living airport behind the window (image coordinates, 1024 x 1024) ----------
@@ -588,12 +548,13 @@ a{color:inherit}
     vctx.restore();
   }
 
-  let last = -1;
+  let last = -1, lastP = null, dirty = true;
   function update() {
     const y = scrollY;
     if (y === last) return; last = y;
     const vh = innerHeight;
     const P = {}; scenes.forEach(s => P[s.id] = progressOf(s));
+    lastP = P; dirty = true;
 
     // ---- 1 boarding
     { const p = P.boarding;
@@ -615,36 +576,25 @@ a{color:inherit}
       $('veil').style.opacity = seg(p, .78, .98);
       viewOn = p < 1 && $('boarding').getBoundingClientRect().bottom > 0;
     }
-    // ---- 1b cabin tour
+    // ---- 1b cabin tour (the 3D camera and hotspots are driven in concorde3d.js)
     { const p = P.cabin;
-      const STOPS = [[.07,.17],[.19,.29],[.31,.41],[.43,.54],[.61,.74],[.82,.97]];
-      const w = ([a, b]) => seg(p, a - .025, a) * (1 - seg(p, b, b + .025));
-      const walk = ease(seg(p, 0, .58));
-      set($('camA'), `translate(-50%,-50%) scale(${RM ? 1 : 1.04 + walk * .5}) translateY(${walk * 2}%)`, 1 - seg(p, .56, .61));
-      $('shotB').style.opacity = seg(p, .56, .61) * (1 - seg(p, .76, .81));
-      $('shotC').style.opacity = seg(p, .76, .81);
-      if (!RM) {
-        $('imgB').style.transform = `scale(${1.14 - .1 * seg(p, .56, .8)}) translateX(${lerp(-2, 2, seg(p, .56, .8))}%)`;
-        $('imgC').style.transform = `scale(${1.16 - .14 * seg(p, .76, 1)})`;
-      }
-      $('cab-intro').style.opacity = 1 - seg(p, .02, .07);
-      document.querySelectorAll('#cabin .hot').forEach(h => h.style.opacity = w(STOPS[+h.dataset.stop]));
+      const STOPS = [[.05,.17],[.20,.32],[.35,.47],[.50,.66],[.72,.96]];
+      const w = ([a, b]) => seg(p, a - .03, a) * (1 - seg(p, b, b + .03));
+      $('cab-intro').style.opacity = 1 - seg(p, .015, .05);
       document.querySelectorAll('#cabin .tourcard').forEach((c, i) => {
         const o = w(STOPS[i]); c.style.opacity = o; c.style.transform = `translateY(${(1 - o) * 16}px)`;
       });
     }
-    // ---- 2 droop
+    // ---- 2 droop    // ---- 2 droop
     { const p = P.droop;
-      const angle = p < .4 ? lerp(0, 5, ease(seg(p, .06, .38))) : lerp(5, 12.5, ease(seg(p, .52, .86)));
-      droop(angle);
-      set($('droop-photo'), RM ? 'none' : `scale(${1.08 - p*.06}) translate(${-p*2}%, ${p*1.5}%)`);
+      const angle = p < .42 ? lerp(0, 5, ease(seg(p, .1, .36))) : lerp(5, 12.5, ease(seg(p, .62, .88)));
+      $('readout').textContent = angle.toFixed(1) + '°';
       const landing = angle > 9;
       $('fact-state').textContent = angle < 4.9 ? 'Nose lowering' : landing ? 'Landing position' : 'Take-off position';
       const txt = landing
         ? 'For landing it drops further, to 12.5 degrees. The delta wing needs a nose-high attitude, so the droop lets the pilots see past the long nose.'
         : 'Before take-off the long nose is lowered 5 degrees, so the pilots can see past it.';
       if ($('fact-text').textContent !== txt) $('fact-text').textContent = txt;
-      $('sight-label').textContent = angle >= 12.4 ? 'RUNWAY IN VIEW' : "PILOT'S LINE OF SIGHT";
     }
     // ---- 3 boom
     { const p = P.boom;
@@ -656,15 +606,9 @@ a{color:inherit}
     }
     // ---- 4 mach 2 plane
     { const p = P.mach2;
-      const rise = ease(seg(p, 0, .42)), grow = ease(seg(p, .5, .95));
-      const h = vh * 1.32;
-      const startY = vh * .78, endY = vh * .5 - h * .55;           // nose peeks in, then centre of plane
-      const ty = lerp(startY, endY, rise) + grow * vh * .12;
-      set($('plane'), `translate(-50%, ${ty}px) scale(${RM ? 1 : 1 + grow * 1.15})`);
-      const spread = ease(seg(p, .15, .6));
-      const fade = 1 - .55 * grow;
-      set($('flyat'), `translateX(${-spread*3 - grow*6}vw)`, fade);
-      set($('machtwo'), `translateX(${spread*3 + grow*6}vw)`, fade);
+      const grow = ease(seg(p, .5, .95)), spread = ease(seg(p, .15, .6));
+      set($('flyat'), `translateX(${-spread*3 - grow*4}vw)`);
+      set($('machtwo'), `translateX(${spread*3 + grow*4}vw)`);
       const info = seg(p, .12, .3) * (1 - seg(p, .62, .78));
       $('sidecopy').style.opacity = $('spec').style.opacity = info;
     }
@@ -713,9 +657,15 @@ a{color:inherit}
     $('cta-next').textContent = atEnd ? 'Replay the flight' : (y < 10 ? 'Begin the flight' : 'Next scene');
   }
 
-  function frame(t) { if (lenis) lenis.raf(t); update(); if (viewOn && !RM) drawView(t); requestAnimationFrame(frame); }
+  function frame(t) {
+    if (lenis) lenis.raf(t);
+    update();
+    if (viewOn && !RM) drawView(t);
+    if (window.C3D && lastP && (dirty || C3D.animating())) { C3D.update(lastP, t); dirty = false; }
+    requestAnimationFrame(frame);
+  }
   requestAnimationFrame(frame);
-  addEventListener('resize', () => { last = -1; });
+  addEventListener('resize', () => { last = -1; if (window.C3D) C3D.resize(); });
   update();
   drawView(0);
 })();
