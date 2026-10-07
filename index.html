@@ -68,7 +68,7 @@ a{color:inherit}
 .will{will-change:transform,opacity}
 
 /* 1. window */
-#boarding{height:340vh}
+#boarding{height:430vh}
 #boarding .stage{background:radial-gradient(60% 70% at 50% 48%,#6a574b 0%,#3a2e28 34%,#171311 66%,#0b0a09 100%)}
 #boarding .glow{position:absolute;inset:0;background:radial-gradient(30% 38% at 50% 50%,rgba(255,236,214,.18),transparent 70%)}
 .h-split{position:absolute;margin:0;font-weight:500;font-stretch:125%;letter-spacing:-.035em;line-height:.9;font-size:clamp(46px,9.6vw,158px);color:var(--paper);white-space:nowrap}
@@ -77,6 +77,13 @@ a{color:inherit}
 .window{position:absolute;left:50%;top:50%;height:min(78vh,118vw);aspect-ratio:1;transform-origin:50% 59%}
 .window img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 40px 70px rgba(0,0,0,.55))}
 .window canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+/* pull-down window shade, built from the shade in the photo (image box is 1024 units) */
+.shade-clip{position:absolute;left:20.898%;top:29.297%;width:58.594%;height:54.297%;overflow:hidden;pointer-events:none;
+  border-radius:0 0 28% 28% / 0 0 27% 27%;-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 3%);mask-image:linear-gradient(180deg,transparent 0,#000 3%)}
+.shade-panel{position:absolute;inset:0;background:url(assets/shade-tex.webp) repeat 0 0/42.67% auto;will-change:transform}
+.shade-panel::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(20,24,32,.22),rgba(20,24,32,0) 9%,rgba(20,24,32,0) 91%,rgba(20,24,32,.22)),linear-gradient(180deg,rgba(255,255,255,.05),rgba(20,24,32,.07))}
+.shade-panel::after{content:"";position:absolute;left:0;right:0;bottom:0;height:8.27%;background:url(assets/shade-bar.webp) no-repeat center bottom/100% 100%}
+.shade-shadow{position:absolute;left:0;right:0;top:100%;height:7%;background:linear-gradient(180deg,rgba(0,0,0,.45),rgba(0,0,0,0))}
 #boarding .intro{position:absolute;left:var(--gutter);bottom:15vh;display:grid;gap:14px}
 #boarding .intro .rule{width:34px;height:1px;background:var(--paper)}
 #boarding .scrollhint{position:absolute;right:var(--gutter);bottom:15vh;width:min(320px,40vw);border-top:1px solid rgba(244,241,234,.5);padding-top:12px;display:flex;justify-content:space-between}
@@ -222,14 +229,14 @@ a{color:inherit}
     <div class="stage">
       <div class="glow"></div>
       <h1 class="h-split will" id="london">London</h1>
-      <div class="window will" id="window"><img src="assets/window.webp" alt="A small oval cabin window looking out at the airport at dusk, runway lights glowing" width="1024" height="1024"><canvas id="view" aria-hidden="true"></canvas></div>
+      <div class="window will" id="window"><img src="assets/window.webp" alt="A small oval cabin window looking out at the airport at dusk, runway lights glowing" width="1024" height="1024"><canvas id="view" aria-hidden="true"></canvas><div class="shade-clip" aria-hidden="true"><div class="shade-panel" id="shade"><i class="shade-shadow"></i></div></div></div>
       <p class="h-split will" id="newyork" aria-hidden="true">New York</p>
       <div class="intro will" id="intro">
         <span class="label">Seat 1A</span>
         <span class="rule"></span>
-        <p class="copy">A virtual Concorde flight from London Heathrow to New York JFK. About 3.5 hours. Look how small your window is.</p>
+        <p class="copy">A virtual Concorde flight from London Heathrow to New York JFK. About 3.5 hours. Scroll to open your window shade.</p>
       </div>
-      <div class="scrollhint label will" id="scrollhint"><span>↓ Scroll down</span><span>to board</span></div>
+      <div class="scrollhint label will" id="scrollhint"><span>↓ Scroll</span><span>to open the shade</span></div>
       <div class="factchip glass will" id="factchip">
         <span class="label">Why so small?</span>
         <span class="big">60,000 ft</span>
@@ -534,17 +541,21 @@ a{color:inherit}
 
     // ---- 1 boarding
     { const p = P.boarding;
-      const z = ease(seg(p, .08, .92));
+      const open = ease(seg(p, .03, .22));
+      const sh = $('shade');
+      sh.style.transform = `translateY(${-open * 91.73}%)`;
+      sh.style.opacity = 1 - seg(p, .215, .228);
+      const z = ease(seg(p, .3, .95));
       const s = RM ? 1 : 1 + Math.pow(z, 2) * 3.6;
       set($('window'), `translate(-50%,-59%) scale(${s})`);
-      const apart = ease(seg(p, 0, .6));
-      set($('london'), `translateX(${-apart*55}vw)`, 1 - seg(p, .25, .6));
-      set($('newyork'), `translateX(${apart*55}vw)`, 1 - seg(p, .25, .6));
+      const apart = ease(seg(p, .24, .66));
+      set($('london'), `translateX(${-apart*55}vw)`, 1 - seg(p, .42, .66));
+      set($('newyork'), `translateX(${apart*55}vw)`, 1 - seg(p, .42, .66));
       $('london').style.filter = $('newyork').style.filter = `blur(${apart*6}px)`;
-      $('intro').style.opacity = $('scrollhint').style.opacity = 1 - seg(p, 0, .18);
-      const f = seg(p, .16, .3) * (1 - seg(p, .55, .68));
-      set($('factchip'), `translateY(${(1 - seg(p, .16, .3))*30}px)`, f);
-      $('veil').style.opacity = seg(p, .7, .97);
+      $('intro').style.opacity = $('scrollhint').style.opacity = 1 - seg(p, .2, .3);
+      const f = seg(p, .3, .4) * (1 - seg(p, .6, .7));
+      set($('factchip'), `translateY(${(1 - seg(p, .3, .4))*30}px)`, f);
+      $('veil').style.opacity = seg(p, .78, .98);
       viewOn = p < 1 && $('boarding').getBoundingClientRect().bottom > 0;
     }
     // ---- 2 droop
