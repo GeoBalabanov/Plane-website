@@ -77,13 +77,12 @@ a{color:inherit}
 .window{position:absolute;left:50%;top:50%;height:min(78vh,118vw);aspect-ratio:1;transform-origin:50% 59%}
 .window img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 40px 70px rgba(0,0,0,.55))}
 .window canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-/* pull-down window shade, built from the shade in the photo (image box is 1024 units) */
-.shade-clip{position:absolute;left:20.898%;top:29.297%;width:58.594%;height:54.297%;overflow:hidden;pointer-events:none;
-  border-radius:0 0 28% 28% / 0 0 27% 27%;-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 3%);mask-image:linear-gradient(180deg,transparent 0,#000 3%)}
-.shade-panel{position:absolute;inset:0;background:url(assets/shade-tex.webp) repeat 0 0/42.67% auto;will-change:transform}
-.shade-panel::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(20,24,32,.22),rgba(20,24,32,0) 9%,rgba(20,24,32,0) 91%,rgba(20,24,32,.22)),linear-gradient(180deg,rgba(255,255,255,.05),rgba(20,24,32,.07))}
-.shade-panel::after{content:"";position:absolute;left:0;right:0;bottom:0;height:8.27%;background:url(assets/shade-bar.webp) no-repeat center bottom/100% 100%}
-.shade-shadow{position:absolute;left:0;right:0;top:100%;height:7%;background:linear-gradient(180deg,rgba(0,0,0,.45),rgba(0,0,0,0))}
+/* pull-down window shade, built from the shade in the photo and cut to the window recess (image box is 1024 units) */
+.shade-clip{position:absolute;left:20.02%;top:26.37%;width:59.96%;height:60.55%;overflow:hidden;pointer-events:none;
+  -webkit-mask:url(assets/shade-mask.png) 0 0/100% 100% no-repeat;mask:url(assets/shade-mask.png) 0 0/100% 100% no-repeat}
+.shade-panel{position:absolute;inset:0;background:url(assets/shade-panel.webp) 0 0/100% 100% no-repeat;will-change:transform}
+.shade-edge{position:absolute;inset:0;background:url(assets/shade-edge.png) 0 0/100% 100% no-repeat}
+.shade-shadow{position:absolute;left:0;right:0;top:100%;height:6%;background:linear-gradient(180deg,rgba(0,0,0,.45),rgba(0,0,0,0))}
 #boarding .intro{position:absolute;left:var(--gutter);bottom:15vh;display:grid;gap:14px}
 #boarding .intro .rule{width:34px;height:1px;background:var(--paper)}
 #boarding .scrollhint{position:absolute;right:var(--gutter);bottom:15vh;width:min(320px,40vw);border-top:1px solid rgba(244,241,234,.5);padding-top:12px;display:flex;justify-content:space-between}
@@ -229,7 +228,7 @@ a{color:inherit}
     <div class="stage">
       <div class="glow"></div>
       <h1 class="h-split will" id="london">London</h1>
-      <div class="window will" id="window"><img src="assets/window.webp" alt="A small oval cabin window looking out at the airport at dusk, runway lights glowing" width="1024" height="1024"><canvas id="view" aria-hidden="true"></canvas><div class="shade-clip" aria-hidden="true"><div class="shade-panel" id="shade"><i class="shade-shadow"></i></div></div></div>
+      <div class="window will" id="window"><img src="assets/window.webp" alt="A small oval cabin window looking out at the airport at dusk, runway lights glowing" width="1024" height="1024"><canvas id="view" aria-hidden="true"></canvas><div class="shade-clip" aria-hidden="true"><div class="shade-panel" id="shade"><i class="shade-shadow"></i></div><div class="shade-edge" id="shade-edge"></div></div></div>
       <p class="h-split will" id="newyork" aria-hidden="true">New York</p>
       <div class="intro will" id="intro">
         <span class="label">Seat 1A</span>
@@ -543,8 +542,9 @@ a{color:inherit}
     { const p = P.boarding;
       const open = ease(seg(p, .03, .22));
       const sh = $('shade');
-      sh.style.transform = `translateY(${-open * 91.73}%)`;
+      sh.style.transform = `translateY(${-open * 87.74}%)`;
       sh.style.opacity = 1 - seg(p, .215, .228);
+      $('shade-edge').style.opacity = 1 - open;
       const z = ease(seg(p, .3, .95));
       const s = RM ? 1 : 1 + Math.pow(z, 2) * 3.6;
       set($('window'), `translate(-50%,-59%) scale(${s})`);
