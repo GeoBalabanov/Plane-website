@@ -7,7 +7,9 @@
    2. cuts the fuselage on the plane z = HINGE_Z, just ahead of the windscreen, into "Fuselage"
       and "Nose", caps both openings, and hangs the nose on a "NosePivot" node low on the cut
       (the two small strakes under the cockpit cross that plane but stay whole on the fuselage),
-   3. removes duplicated engine parts, merges what shares a material, converts textures to WebP
+   3. paints out the nose joint that is drawn on the fuselage texture: it is a curve, so it would
+      ride on the nose away from the straight cut,
+   4. removes duplicated engine parts, merges what shares a material, converts textures to WebP
       and compresses the geometry with meshopt. */
 import { Document, NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS, EXTMeshoptCompression, EXTTextureWebP } from '@gltf-transform/extensions';
@@ -21,6 +23,8 @@ const OUT = new URL('../assets/models/concorde.glb', import.meta.url).pathname;
 const HINGE_Z = 25.95;                                   // base of the windscreen, in the aircraft frame before grounding
 const DUPLICATES = /^Sphere0[1-8]-/;                     // nozzle parts that exist twice in the download
 const NAMES = { S01: 'Fuselage', Object04: 'WingRight', Object10: 'WingLeft', SShape07: 'Fin' };
+// the painted joint on the 2048 px fuselage texture, as [left, top, width, height]: right side, left side, belly
+const PAINTED_JOINT = [[196, 18, 64, 61], [196, 330, 64, 58], [246, 448, 14, 72]];
 
 const io = new NodeIO();
 const src = await io.read(SRC), sroot = src.getRoot();
@@ -93,10 +97,15 @@ const local = verts => verts.map(v => ({ ...v, p: [v.p[0] - pivot[0], v.p[1] - p
 /* ---------- write the new document ---------- */
 const doc = new Document(), buffer = doc.createBuffer(), scene = doc.createScene('Concorde');
 const materials = new Map();
+const fusMaterial = parts.find(p => p.name === 'Fuselage').material;
+const paper = await sharp(fusMaterial.getBaseColorTexture().getImage()).extract({ left: 150, top: 50, width: 1, height: 1 }).raw().toBuffer();   // the plain skin colour
+const cleanSkin = await sharp(fusMaterial.getBaseColorTexture().getImage())
+  .composite(PAINTED_JOINT.map(([left, top, width, height]) => ({ left, top, input: { create: { width, height, channels: 3, background: { r: paper[0], g: paper[1], b: paper[2] } } } })))
+  .png().toBuffer();
 const copyMaterial = m => {
   if (materials.has(m)) return materials.get(m);
   const t = m.getBaseColorTexture(); let tex = null;
-  if (t) tex = doc.createTexture(t.getName()).setImage(t.getImage()).setMimeType(t.getMimeType());
+  if (t) tex = m === fusMaterial ? doc.createTexture('fuselage').setImage(cleanSkin).setMimeType('image/png') : doc.createTexture(t.getName()).setImage(t.getImage()).setMimeType(t.getMimeType());
   const out = doc.createMaterial(m.getName().replace('-FACES', '')).setBaseColorFactor(m.getBaseColorFactor()).setBaseColorTexture(tex).setRoughnessFactor(m.getRoughnessFactor()).setMetallicFactor(m.getMetallicFactor());
   materials.set(m, out); return out;
 };
