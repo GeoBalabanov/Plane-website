@@ -189,45 +189,43 @@ body.at-end .hud,body.at-end .stagebar{opacity:0}
 .ticks span.on{color:var(--ink)}
 .on-light .hair{opacity:.2}
 
-/* 3. clouds */
+/* ---------- 4. supersonic: over the clouds ---------- */
 #boom{height:330vh}
 #boom .stage{background:#5d8fc2}
 #boom .photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform-origin:50% 60%}
-#boom .tint{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,30,60,.35),rgba(10,30,60,.05) 45%,rgba(255,255,255,.1))}
-.para{position:absolute;left:var(--gutter);right:var(--gutter);top:20vh;margin:0;font-weight:500;font-stretch:112%;letter-spacing:-.03em;line-height:1.02;font-size:clamp(30px,5.1vw,84px);color:#fff;max-width:17ch;text-wrap:balance}
-.para .w{opacity:.16;transition:opacity .25s linear}
-.para.ghost{color:rgba(255,255,255,.95);filter:blur(7px);transform:translateY(.32em);pointer-events:none}
-.para.ghost .w{opacity:0}
-#boom .meter{position:absolute;left:var(--gutter);bottom:16vh;display:grid;gap:6px}
-#boom .mach{font-size:clamp(56px,7vw,110px);font-weight:400;font-stretch:125%;letter-spacing:-.04em;line-height:.9;font-variant-numeric:tabular-nums}
+#boom .tint{position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,28,58,.42) 0%,rgba(8,28,58,.04) 34%,rgba(12,52,104,.2) 58%,rgba(10,48,100,.72) 100%)}
+#boom .meter{position:absolute;left:var(--gutter);top:17vh;display:grid;gap:14px;justify-items:start}
+#boom .mach{font-variant-numeric:tabular-nums}
+.para{position:absolute;left:var(--gutter);right:var(--gutter);bottom:15vh;color:#fff;text-wrap:pretty}
+.para .w{opacity:.24;transition:opacity .25s linear}
 
-/* 4. top-down plane */
+/* ---------- 5. Mach 2: the plane rises between the words ---------- */
 #mach2{height:420vh}
-#mach2 .stage{background:var(--pearl);color:#16120f}
-#mach2 .tintlayer{position:absolute;inset:0;pointer-events:none;mix-blend-mode:multiply;z-index:4;
-  background:radial-gradient(80% 60% at 50% 30%,#fbf3f1 0%,transparent 60%),linear-gradient(180deg,#f5e9e8 0%,#efe2e6 45%,#e3dcea 100%)}
-.h-mach{position:absolute;top:44vh;margin:0;font-weight:400;font-stretch:125%;letter-spacing:-.04em;line-height:.9;font-size:clamp(46px,10vw,168px);z-index:1;white-space:nowrap}
+#mach2 .stage{background:linear-gradient(180deg,#a69d96 0%,#cfc7bf 34%,#ece5da 68%,var(--bone) 100%);color:var(--ink)}
+.h-mach{position:absolute;top:41vh;white-space:nowrap;z-index:1}
 #mach3d{z-index:2}
 #flyat{left:var(--gutter)}
 #machtwo{right:var(--gutter)}
-#mach2 .side-copy{position:absolute;left:var(--gutter);top:calc(44vh + clamp(60px,9vw,150px));z-index:3;display:grid;gap:8px}
-.spec{position:absolute;right:var(--gutter);top:calc(44vh + clamp(60px,9vw,150px));width:min(300px,42vw);z-index:3;font-size:12.5px}
-.spec h3{margin:0 0 10px;font:500 12px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;display:flex;justify-content:space-between;border-bottom:1px solid #16120f;padding-bottom:10px}
-.spec dl{margin:0;display:grid;grid-template-columns:1fr auto;gap:8px 12px}
-.spec dt{color:var(--graphite)}
-.spec dd{margin:0;font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+#mach2 .side-copy{position:absolute;left:var(--gutter);top:calc(41vh + clamp(58px,9.4vw,152px));z-index:3;max-width:15ch}
+.spec{position:absolute;right:var(--gutter);bottom:14vh;width:min(348px,38vw);z-index:3;display:grid;gap:16px}
+.spec .hair{opacity:.3}
+.spec .row{display:flex;justify-content:space-between;gap:12px}
+.spec dl{margin:0;display:grid;grid-template-columns:1fr 1fr;gap:16px 12px}
+.spec dl div{display:grid;gap:3px}
+.spec dt{color:var(--stone)}
+.spec dd{margin:0}
 
-/* 5. earth */
+/* ---------- 6. cruise: the curve of the Earth, the heat ---------- */
 #cruise{height:320vh}
 #cruise .stage{background:#04060b}
 #cruise .photo{position:absolute;left:-4%;width:108%;height:100%;object-fit:cover;object-position:50% 60%}
 #cruise .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(4,6,11,.95) 0%,rgba(4,6,11,.75) 40%,rgba(4,6,11,0) 68%)}
-#cruise .block{position:absolute;left:var(--gutter);top:14vh;display:grid;gap:14px;max-width:min(900px,92vw)}
-#cruise h2{margin:0;font-weight:400;font-stretch:125%;letter-spacing:-.045em;line-height:.9;font-size:clamp(50px,10vw,170px);font-variant-numeric:tabular-nums}
-#cruise .heat h2{color:#ffb08a}
-#cruise .heat{position:absolute;left:var(--gutter);top:14vh;display:grid;gap:14px;opacity:0}
-.stretch{display:flex;align-items:center;gap:12px;font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--flame)}
-.stretch i{display:block;height:1px;background:var(--paper);width:260px;transform-origin:left center}
+#cruise .block{position:absolute;left:var(--gutter);top:17vh;display:grid;gap:22px;justify-items:start;max-width:calc(100vw - 2*var(--gutter))}
+#cruise h2{font-variant-numeric:tabular-nums}
+#cruise .heat{opacity:0}
+#cruise .heat h2{color:var(--flame)}
+.stretch{display:flex;align-items:center;gap:28px}
+.stretch i{display:block;height:1px;background:var(--paper);width:min(260px,50vw);transform-origin:left center}
 
 /* 6. globe */
 #arrival{height:400vh}

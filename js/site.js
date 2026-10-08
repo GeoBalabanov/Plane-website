@@ -17,12 +17,10 @@
       `<span class="wd">${[...w].map(c => `<span class="ch" style="--i:${i++}">${c}</span>`).join('')}</span>`).join(' ') + '</span>';
   });
 
-  // split the paragraph into words for the reveal
-  const para = $('para'), ghost = $('para-ghost');
-  const words = para.textContent.trim().split(/\s+/);
-  para.innerHTML = words.map(w => `<span class="w">${w}</span>`).join(' ');
-  ghost.innerHTML = words.map(w => `<span class="w">${w}</span>`).join(' ');
-  const pw = [...para.querySelectorAll('.w')], gw = [...ghost.querySelectorAll('.w')];
+  // split the paragraph into words: they light up one by one
+  const para = $('para');
+  para.innerHTML = para.textContent.trim().split(/\s+/).map(w => `<span class="w">${w}</span>`).join(' ');
+  const pw = [...para.querySelectorAll('.w')];
 
   const scenes = [...document.querySelectorAll('.scene'), $('end')];
   const stages = scenes.map(s => s.querySelector('.stage') || s);
@@ -226,15 +224,14 @@
       const tick = angle < 2.5 ? 0 : landing ? 2 : 1;
       ticks.forEach((t, i) => t.classList.toggle('on', i === tick));
     }
-    // ---- 3 boom
+    // ---- 4 supersonic
     { const p = P.boom;
       set($('boom-photo'), RM ? 'none' : `scale(${1.18 - p*.16}) translateY(${p*-3}%)`);
-      const n = pw.length, r = seg(p, .05, .78) * (n + 1), rg = seg(p, .12, .9) * (n + 1);
-      pw.forEach((w, i) => w.style.opacity = (.16 + .84 * clamp(r - i)).toFixed(3));
-      gw.forEach((w, i) => w.style.opacity = (.22 * clamp(rg - i) * (1 - seg(p, .85, 1))).toFixed(3));
+      const n = pw.length, r = seg(p, .05, .78) * (n + 1);
+      pw.forEach((w, i) => w.style.opacity = (.24 + .76 * clamp(r - i)).toFixed(3));
       $('mach-big').textContent = lerp(.95, 1.7, ease(seg(p, .1, .9))).toFixed(2);
     }
-    // ---- 4 mach 2 plane
+    // ---- 5 mach 2 plane
     { const p = P.mach2;
       const grow = ease(seg(p, .5, .95)), spread = ease(seg(p, .15, .6));
       set($('flyat'), `translateX(${-spread*3 - grow*4}vw)`);
@@ -242,7 +239,7 @@
       const info = seg(p, .12, .3) * (1 - seg(p, .62, .78));
       $('sidecopy').style.opacity = $('spec').style.opacity = info;
     }
-    // ---- 5 cruise
+    // ---- 6 cruise
     { const p = P.cruise;
       set($('earth'), RM ? 'none' : `translateY(${(1 - ease(seg(p, 0, .7))) * 22}vh) scale(${1.12 - p*.1})`);
       const a = 1 - seg(p, .42, .55), h = seg(p, .55, .68);
@@ -251,7 +248,7 @@
       $('temp').textContent = Math.round(lerp(20, 127, ease(seg(p, .55, .85)))) + '°C';
       $('stretch-bar').style.transform = `scaleX(${1 + .06 * ease(seg(p, .7, .95))})`;
     }
-    // ---- 6 arrival
+    // ---- 7 arrival
     { const p = P.arrival;
       const enter = ease(seg(p, 0, .35));
       set($('globe'), `translate(${lerp(25, -50, enter)}%, -50%) rotate(${lerp(-8, 0, enter)}deg)`);

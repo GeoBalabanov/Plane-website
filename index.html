@@ -127,58 +127,58 @@
     </div>
   </section>
 
-  <!-- 3. Climb: sonic boom over the clouds -->
+  <!-- 4. Climb: sonic boom over the clouds -->
   <section class="scene" id="boom" data-name="Supersonic">
     <div class="stage">
       <img class="photo will" id="boom-photo" src="assets/clouds.webp" alt="A sea of clouds seen from high altitude" width="1264" height="848">
       <div class="tint"></div>
-      <p class="para ghost" id="para-ghost" aria-hidden="true"></p>
-      <p class="para" id="para">Reheat on. Past Mach 0.95 and through the sound barrier. Breaking it makes a sonic boom, so Concorde flew supersonic only over water.</p>
       <div class="meter">
-        <span class="label">Mach</span>
-        <span class="mach" id="mach-big">0.95</span>
+        <span class="label rise">Mach</span>
+        <span class="mach d2 rise" id="mach-big" style="--d:100">0.95</span>
       </div>
+      <p class="para lead" id="para">Reheat on. Past Mach 0.95 and through the sound barrier. Breaking it makes a sonic boom, so Concorde flew supersonic only over water.</p>
     </div>
   </section>
 
-  <!-- 4. Mach 2: the plane rises between the words -->
+  <!-- 5. Mach 2: the plane rises between the words -->
   <section class="scene" id="mach2" data-name="Mach 2">
     <div class="stage">
-      <h2 class="h-mach will" id="flyat">Fly at</h2>
-      <h2 class="h-mach will" id="machtwo">Mach 2</h2>
+      <h2 aria-label="Fly at Mach 2">
+        <span class="h-mach d1 will" id="flyat" aria-hidden="true" data-reveal>Fly at</span>
+        <span class="h-mach d1 will" id="machtwo" aria-hidden="true" data-reveal>Mach 2</span>
+      </h2>
       <canvas class="gl" id="mach3d" role="img" aria-label="3D Concorde seen from above with reheat on, rising between the words and spreading its delta wing"></canvas>
-      <div class="side-copy will" id="sidecopy">
-        <span class="label">Cruise</span>
-        <p class="copy" style="margin:0">Twice the speed of sound, on a delta wing built for it.</p>
-      </div>
+      <p class="side-copy sub will" id="sidecopy">Twice the speed of sound, on a delta wing built for it.</p>
       <div class="spec will" id="spec">
-        <h3><span>Concorde</span><span>Cruise</span></h3>
-        <dl>
-          <dt>Speed</dt><dd>Mach 2</dd>
-          <dt>Altitude</dt><dd>about 60,000 ft</dd>
-          <dt>Nose temperature</dt><dd>about 127°C</dd>
-          <dt>London to New York</dt><dd>about 3.5 h</dd>
+        <span class="hair"></span>
+        <div class="row label"><span>Concorde</span><span>Cruise</span></div>
+        <dl class="label">
+          <div><dt>Speed</dt><dd>Mach 2</dd></div>
+          <div><dt>Altitude</dt><dd>about 60,000 ft</dd></div>
+          <div><dt>Nose temperature</dt><dd>about 127°C</dd></div>
+          <div><dt>London to New York</dt><dd>about 3.5 h</dd></div>
         </dl>
       </div>
-      <div class="tintlayer"></div>
     </div>
   </section>
 
-  <!-- 5. Cruise: the curve of the Earth, the heat -->
+  <!-- 6. Cruise: the curve of the Earth, the heat -->
   <section class="scene" id="cruise" data-name="Cruise">
     <div class="stage">
       <img class="photo will" id="earth" src="assets/earth.webp" alt="The curve of the Earth under a black sky" width="1264" height="848">
       <div class="shade"></div>
       <div class="block will" id="alt-block">
-        <span class="label">Cruise altitude</span>
-        <h2>60,000 ft</h2>
-        <p class="copy" style="color:var(--mist)">High enough to see the curve of the Earth.</p>
+        <span class="label rise">Cruise altitude</span>
+        <h2 class="d1" data-reveal>60,000 ft</h2>
+        <span class="rule rise" style="--d:300"></span>
+        <p class="copy muted rise" style="--d:400">High enough to see the curve of the Earth.</p>
       </div>
-      <div class="heat will" id="heat-block">
+      <div class="block heat will" id="heat-block">
         <span class="label">Nose temperature</span>
-        <h2 id="temp">127°C</h2>
-        <p class="copy" style="color:var(--mist)">At Mach 2 the airframe gets hot. The nose reaches about 127°C and the plane stretches by some centimetres.</p>
-        <div class="stretch"><i id="stretch-bar"></i><span>+ some cm</span></div>
+        <h2 class="d1" id="temp">127°C</h2>
+        <span class="rule"></span>
+        <p class="copy muted">At Mach 2 the airframe gets hot. The nose reaches about 127°C and the plane stretches by some centimetres.</p>
+        <div class="stretch label"><i id="stretch-bar"></i><span>+ some cm</span></div>
       </div>
     </div>
   </section>
