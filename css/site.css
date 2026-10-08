@@ -384,3 +384,10 @@ body.at-end .hud,body.at-end .stagebar{opacity:0}
   .stamp{right:16px;top:auto;bottom:70px;width:110px;height:110px}
   .ck-actions{flex-direction:column;gap:6px}
 }
+
+/* take-off over a photographed sky: lighter liquid glass, so the cards read as lenses rather than panels */
+#droop .glass.on-light{border-radius:20px;background:rgba(255,255,255,.2);
+  -webkit-backdrop-filter:blur(24px) saturate(1.6) brightness(1.06);backdrop-filter:blur(24px) saturate(1.6) brightness(1.06);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.75),inset 0 0 0 1px rgba(255,255,255,.32),0 30px 60px -34px rgba(20,24,32,.45)}
+#droop .glass.on-light::before{background:radial-gradient(240px circle at var(--gx,30%) var(--gy,28%),rgba(255,255,255,.42),rgba(255,255,255,.06) 50%,transparent 76%)}
+#droop h2{text-shadow:0 1px 30px rgba(255,255,255,.25)}

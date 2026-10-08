@@ -7,6 +7,8 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
@@ -21,16 +23,15 @@ const DEG = Math.PI / 180, STAND = 2.77;                   // height of the mode
 const MAIN_Z = -2.7;                                       // main bogies along the aircraft: the aircraft rotates about them
 const BASE = 330, TOPS = 400;                              // cloud deck: base and tops, in metres above the runway
 
-/* ---------- shared GLSL: the evening sky, used by the dome, the haze on the ground and the clouds ---------- */
+/* ---------- shared GLSL: the photographed evening sky ("Kloppenheim 06", Poly Haven, CC0), used by the dome,
+   the haze on the ground and the clouds. Only its upper part is stored, so below the horizon it holds the horizon. ---------- */
 const SKY = `
-  uniform vec3 sunDir;
+  uniform vec3 sunDir; uniform sampler2D tSky; uniform float skyRot, skyGain;
   vec3 sky(vec3 d){
-    float y = max(d.y, 0.), s = max(dot(d, sunDir), 0.);
-    float az = dot(normalize(d.xz + 1e-5), normalize(sunDir.xz)) * .5 + .5;
-    vec3 h = mix(vec3(.88, .56, .58), vec3(1.12, .64, .34), az * az);          // pink away from the sun, amber towards it
-    vec3 c = mix(h, vec3(.19, .3, .54), pow(y, .42));                          // dusty blue overhead
-    c += vec3(1., .62, .32) * pow(s, 6.) * .55 + vec3(1., .8, .55) * pow(s, 60.) * 1.4 + vec3(1., .9, .75) * smoothstep(.9994, .9997, s) * 14.;
-    return c * 1.2; }
+    d = normalize(d);
+    float u = atan(d.z, d.x) * .1591549 + .5 + skyRot, v = .5 - asin(clamp(d.y, -1., 1.)) * .3183099;
+    vec3 c = texture2D(tSky, vec2(u, 1. - min(v, .552) / .56)).rgb;
+    return pow(c, vec3(2.2)) * skyGain; }
   float hash(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
   float noise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f);
     return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1)), f.x), f.y); }
@@ -47,80 +48,85 @@ function start() {
 
   const scene = new THREE.Scene();
   const cam = new THREE.PerspectiveCamera(26, 1, .5, 40000);
-  const sunDir = new THREE.Vector3(-.62, .085, .5).normalize();   // low sun ahead and to the left: it lights the side the camera sees
-  const U = { sunDir: { value: sunDir }, dist: { value: 0 }, time: { value: 0 } };
+  // the photo's sun stands 12.6 degrees up; the sky is turned so it sits ahead and to the left, lighting the side the camera sees
+  const SKY_ROT = -.2704, sunDir = new THREE.Vector3(-.6 * Math.cos(12.6 * DEG), Math.sin(12.6 * DEG), .8 * Math.cos(12.6 * DEG));
+  const tex = (url, srgb) => { const t = new THREE.TextureLoader().load(url, () => { dirty = true; }); t.wrapS = t.wrapT = THREE.RepeatWrapping; if (srgb) t.encoding = THREE.sRGBEncoding; t.anisotropy = renderer.capabilities.getMaxAnisotropy(); return t; };
+  const skyTex = tex('assets/sky.webp'); skyTex.wrapT = THREE.ClampToEdgeWrapping; skyTex.generateMipmaps = false; skyTex.minFilter = THREE.LinearFilter;
+  const U = { sunDir: { value: sunDir }, dist: { value: 0 }, time: { value: 0 }, tSky: { value: skyTex }, skyRot: { value: SKY_ROT }, skyGain: { value: .82 } };
 
-  /* ---------- sky dome, and the same sky baked into the reflections ---------- */
+  /* ---------- sky dome; the reflections and fill light come from the same sky as a full HDR ---------- */
   const skyMat = new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false, depthTest: false, uniforms: U,
     vertexShader: 'varying vec3 d; void main(){ d = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }',
-    fragmentShader: SKY + `varying vec3 d; void main(){
-      vec3 c = sky(d);
-      // thin high cirrus, combed by the wind
-      float y = max(d.y, 0.); vec2 q = d.xz / (y + .08) * vec2(.7, 2.4);
-      c = mix(c, vec3(1.25, 1.02, .9), smoothstep(.55, .85, fbm(q * .9 + 3.)) * .35 * smoothstep(.02, .2, y));
-      gl_FragColor = vec4(mix(c, vec3(.33, .3, .27), smoothstep(0., -.08, d.y) * .6), 1.); }` });
-  const dome = new THREE.Mesh(new THREE.SphereGeometry(30000, 48, 24), skyMat); dome.renderOrder = -10; dome.frustumCulled = false; scene.add(dome);
-  {
-    const envScene = new THREE.Scene(); envScene.add(new THREE.Mesh(new THREE.SphereGeometry(50, 48, 24), skyMat));
+    fragmentShader: SKY + 'varying vec3 d; void main(){ gl_FragColor = vec4(sky(d), 1.); }' });
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(30000, 64, 32), skyMat); dome.renderOrder = -10; dome.frustumCulled = false; scene.add(dome);
+  new RGBELoader().load('assets/sky.hdr', hdr => {
+    const envScene = new THREE.Scene();
+    envScene.add(new THREE.Mesh(new THREE.SphereGeometry(50, 64, 32), new THREE.ShaderMaterial({ side: THREE.BackSide, uniforms: { t: { value: hdr }, rot: { value: SKY_ROT } },
+      vertexShader: 'varying vec3 d; void main(){ d = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }',
+      fragmentShader: 'uniform sampler2D t; uniform float rot; varying vec3 d; void main(){ vec3 n = normalize(d); gl_FragColor = vec4(texture2D(t, vec2(atan(n.z, n.x) * .1591549 + .5 + rot, asin(clamp(n.y, -1., 1.)) * .3183099 + .5)).rgb, 1.); }' })));
     const pmrem = new THREE.PMREMGenerator(renderer);
-    scene.environment = pmrem.fromScene(envScene, .02, .1, 100).texture; pmrem.dispose();
-  }
+    scene.environment = pmrem.fromScene(envScene, .015, .1, 100).texture; pmrem.dispose(); hdr.dispose(); dirty = true;
+  });
 
-  /* ---------- the airfield: one shader paints runway, markings, taxiway, mown grass and the fields beyond ---------- */
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(60000, 60000).rotateX(-Math.PI / 2), new THREE.ShaderMaterial({
-    depthWrite: false, uniforms: U, extensions: { derivatives: true }, vertexShader: VERT,
-    fragmentShader: SKY + `uniform float dist; varying vec3 w;
+  /* ---------- the airfield: photographed asphalt and grass (Poly Haven, CC0) under real light and shadow; the markings,
+     taxiway and the fields beyond are painted over them in the material ---------- */
+  const tAsph = tex('assets/runway-albedo.webp'), tRough = tex('assets/runway-rough.webp'), tGrass = tex('assets/grass.webp');
+  const groundMat = new THREE.MeshStandardMaterial({ roughness: 1, metalness: 0, envMapIntensity: .7 });
+  groundMat.onBeforeCompile = sh => {
+    Object.assign(sh.uniforms, U, { tAsph: { value: tAsph }, tRough: { value: tRough }, tGrass: { value: tGrass } });
+    sh.vertexShader = 'varying vec3 vW;\n' + sh.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>\n  vW = (modelMatrix * vec4(transformed, 1.)).xyz;');
+    sh.fragmentShader = 'varying vec3 vW; uniform sampler2D tAsph, tRough, tGrass; uniform float dist; float paved, rubber;\n' + SKY + `
       float band(float v, float a, float b){ float f = fwidth(v) * .75; return smoothstep(a - f, a + f, v) - smoothstep(b - f, b + f, v); }
-      void main(){
-        float x = w.x, z = w.z + dist, ax = abs(x);                         // z: metres along the runway from the start of the roll
+      vec3 lin(vec3 c){ return pow(c, vec3(2.2)); }
+    ` + sh.fragmentShader
+      .replace('#include <map_fragment>', `
+        float x = vW.x, z = vW.z + dist, ax = abs(x);            // z: metres along the runway from the start of the roll
         vec2 g = vec2(x, z);
-        float fade = 1. - smoothstep(.15, .9, fwidth(z) / 6.);              // markings melt away before they would shimmer
-        // grass, mown in stripes along the runway, then a patchwork of fields
-        float n = fbm(g * .02), m = fbm(g * .25);
-        vec3 col = mix(vec3(.11, .13, .055), vec3(.17, .17, .08), n) * (.88 + .24 * m);
-        col *= 1. + .07 * sign(sin(x * .13)) * fade * step(ax, 300.);
+        float fade = 1. - smoothstep(.15, .9, fwidth(z) / 6.);   // markings melt away before they would shimmer
+        // grass: the photo at two scales so it never repeats, mown in stripes along the runway, then fields
+        vec3 grass = lin(texture2D(tGrass, g / 16.).rgb) * lin(texture2D(tGrass, g / 131. + .37).rgb) * 3.2 * vec3(.78, 1., .62);
+        grass *= 1. + .08 * sign(sin(x * .13)) * fade * step(ax, 320.);
         vec2 cell = floor((g + vec2(9000., 3000.)) / vec2(420., 300.)), fc = fract((g + vec2(9000., 3000.)) / vec2(420., 300.));
         float h = hash(cell), edge = min(min(fc.x, 1. - fc.x) * 420., min(fc.y, 1. - fc.y) * 300.);
-        vec3 field = h < .3 ? vec3(.2, .17, .08) : h < .55 ? vec3(.09, .12, .05) : h < .8 ? vec3(.16, .16, .07) : vec3(.12, .1, .07);
-        field *= .85 + .3 * fbm(g * .01 + h * 9.); field = mix(field * .55, field, smoothstep(3., 14., edge));   // hedgerows
+        vec3 field = grass * (h < .3 ? vec3(1.35, 1.05, .7) : h < .55 ? vec3(.7, .85, .6) : h < .8 ? vec3(1.1, 1., .75) : vec3(.9, .75, .6));
+        field = mix(field * .5, field, smoothstep(3., 14., edge));
         float airfield = smoothstep(560., 480., ax) * smoothstep(-1300., -1100., z) * smoothstep(5300., 5100., z);
-        col = mix(field, col, airfield);
+        vec3 col = mix(field, grass, airfield);
         // paved: runway (45 m) with shoulders, a parallel taxiway and four links between them
         float run = band(z, -300., 3900.) * band(ax, -1., 22.5), shoulder = band(z, -300., 3900.) * band(ax, 22.5, 30.);
         float twy = band(z, -900., 4500.) * band(x, 168.5, 191.5);
         float link = 0.; for (int i = 0; i < 4; i++){ float c = 600. + float(i) * 900.; link = max(link, band(z, c - 11.5, c + 11.5) * band(x, 20., 180.)); }
-        float paved = max(max(run, shoulder), max(twy, link));
-        vec3 tar = vec3(.075, .074, .078) * (.8 + .4 * fbm(vec2(x * 1.6, z * .08))) * (.94 + .12 * noise(g * 3.));
-        float rubber = (1. - smoothstep(4., 9., ax)) * (band(z, -300., 1000.) + band(z, 2900., 3900.)) * (.6 + .4 * fbm(vec2(x * 2., z * .02)));
-        tar *= 1. - .35 * rubber;
-        col = mix(col, tar * (1.2 - .3 * run), max(shoulder, max(twy, link)) * .9);
+        paved = max(max(run, shoulder), max(twy, link));
+        vec3 tar = lin(texture2D(tAsph, g / 22.).rgb) * mix(.75, 1.2, texture2D(tAsph, g / 190. + .5).r) * .62;
+        rubber = (1. - smoothstep(3., 8., ax)) * (band(z, -300., 1000.) + band(z, 2900., 3900.));
+        tar *= 1. - .45 * rubber * (.5 + .5 * texture2D(tAsph, vec2(x / 6., z / 160.)).r);
+        col = mix(col, tar * 1.25, max(shoulder, max(twy, link)) * .9);
         col = mix(col, tar, run);
-        // markings
+        // markings: worn white paint
         float wht = 0.;
         wht += band(z, -240., 3860.) * band(ax, -1., .45) * step(mod(z, 50.), 30.);                         // centreline
         wht += band(z, -300., 3900.) * band(ax, 20.6, 21.5);                                                  // edge lines
         wht += band(z, -290., -260.) * band(ax, 3., 21.) * step(1.6, mod(ax - 3., 3.4));                       // threshold piano keys
         wht += band(z, 100., 160.) * band(ax, 6.5, 16.5);                                                      // aiming points
         for (int i = 0; i < 3; i++){ float c = 250. + float(i) * 150.; wht += band(z, c, c + 22.5) * band(ax, 5., 14.) * step(1.1, mod(ax - 5., 3.)); }   // touchdown zone
-        col = mix(col, vec3(.62, .61, .58), clamp(wht, 0., 1.) * run * fade);
+        col = mix(col, vec3(.58, .57, .54) * (.7 + .5 * texture2D(tAsph, g / 9.).r), clamp(wht, 0., 1.) * run * fade * (1. - .5 * rubber));
         float yel = (band(x, 179.6, 180.4) * band(z, -900., 4500.) + band(z, 599.6, 600.4) * band(x, 22., 180.)) * fade;
-        col = mix(col, vec3(.55, .4, .06), clamp(yel, 0., 1.) * .8);
-        // evening light, a sheen on the tarmac towards the sun, then the haze of distance
-        col *= vec3(1.25, 1.08, .92);
-        vec3 v = normalize(w - cameraPosition), r = reflect(v, vec3(0, 1, 0));
-        col += vec3(1., .66, .38) * pow(max(dot(r, sunDir), 0.), 18.) * .55 * paved;
-        float d = length(w - cameraPosition);
-        col = mix(col, sky(normalize(vec3(v.x, 0., v.z))) * .92, 1. - exp(-d / 5200.));
-        gl_FragColor = vec4(col, 1.); }`
-  }));
-  ground.renderOrder = -9; ground.frustumCulled = false; scene.add(ground);
+        col = mix(col, vec3(.5, .34, .04), clamp(yel, 0., 1.) * .8);
+        diffuseColor.rgb = col;`)
+      .replace('#include <roughnessmap_fragment>', 'float roughnessFactor = mix(.97, .55 + .4 * texture2D(tRough, vec2(vW.x, vW.z + dist) / 22.).r, paved);')
+      .replace('#include <fog_fragment>', `
+        vec3 vd = vW - cameraPosition;                           // the haze of distance takes on the colour of the sky behind it
+        gl_FragColor.rgb = mix(gl_FragColor.rgb, sky(vec3(vd.x, length(vd.xz) * .012, vd.z)), 1. - exp(-length(vd) / 6500.));`);
+  };
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(60000, 60000).rotateX(-Math.PI / 2), groundMat);
+  ground.receiveShadow = true; ground.renderOrder = -9; ground.frustumCulled = false; scene.add(ground);
 
   /* ---------- airfield lights: points that the runway carries past the aircraft ---------- */
   const lights = { p: [], c: [], s: [] };
   const L = (x, y, z, c, s) => { lights.p.push(x, y, z); lights.c.push(...c); lights.s.push(s); };
   const WARM = [1, .9, .74], AMBER = [1, .58, .16], RED = [1, .12, .07], GREEN = [.2, 1, .45], BLUE = [.2, .4, 1];
   for (let z = -300; z <= 3900; z += 60) for (const s of [-1, 1]) L(s * 24.5, .4, z, z > 3300 ? AMBER : WARM, .7);
-  for (let z = -240, i = 0; z <= 3860; z += 15, i++) L(0, .06, z, z > 3600 ? RED : z > 3000 && i % 2 ? RED : [.85, .92, 1], .45);
+  for (let z = -240, i = 0; z <= 3860; z += 30, i++) L(0, .06, z, z > 3600 ? RED : z > 3000 && i % 2 ? RED : [.85, .92, 1], .45);
   for (let x = -21; x <= 21; x += 1.5) { L(x, .3, -300, GREEN, .55); L(x, .3, 3900, RED, .55); }
   for (let k = 1; k <= 30; k++) { const z = -300 - k * 30, y = .4 + k * .25;
     for (let x = -2; x <= 2; x++) L(x, y, z, WARM, .55);
@@ -131,11 +137,11 @@ function start() {
   lightGeo.setAttribute('color', new THREE.Float32BufferAttribute(lights.c, 3));
   lightGeo.setAttribute('size', new THREE.Float32BufferAttribute(lights.s, 1));
   const lightMat = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-    uniforms: { dist: U.dist, scale: { value: 1000 }, glow: { value: 3.2 } },
+    uniforms: { dist: U.dist, scale: { value: 1000 }, glow: { value: .9 } },
     vertexShader: `uniform float dist, scale; attribute vec3 color; attribute float size; varying vec3 c; varying float a;
       void main(){ vec3 p = position; p.z -= dist; vec4 mv = modelViewMatrix * vec4(p, 1.);
         float px = size * scale / -mv.z; a = clamp(px / 2., 0., 1.) * exp(-length(mv.xyz) / 4000.); c = color;
-        gl_PointSize = clamp(px, 2., 40.); gl_Position = projectionMatrix * mv; }`,
+        gl_PointSize = clamp(px * .6, 1.5, 16.); gl_Position = projectionMatrix * mv; }`,
     fragmentShader: `uniform float glow; varying vec3 c; varying float a;
       void main(){ vec2 q = gl_PointCoord - .5; float r = dot(q, q) * 4.; float k = exp(-r * 9.) * 1.6 + exp(-r * 2.6) * .22;
         gl_FragColor = vec4(c * k * glow * a, 1.); }` });
@@ -164,9 +170,8 @@ function start() {
         col_a = smoothstep(.46, .64, n) * .94;
         col = mix(col, hz, 1. - exp(-d / 7000.));`}
         gl_FragColor = vec4(col, col_a); }` });
-  const deckBase = new THREE.Mesh(new THREE.PlaneGeometry(60000, 60000).rotateX(Math.PI / 2), deckMat(false)); deckBase.position.y = BASE;
   const deckTops = new THREE.Mesh(new THREE.PlaneGeometry(60000, 60000).rotateX(-Math.PI / 2), deckMat(true)); deckTops.position.y = TOPS;
-  for (const m of [deckBase, deckTops]) { m.frustumCulled = false; m.renderOrder = -5; scene.add(m); }
+  for (const m of [deckTops]) { m.frustumCulled = false; m.renderOrder = -5; scene.add(m); }
 
   // loose puffs in and around the deck: they stream past as the aircraft climbs through
   const puffTex = (() => {
@@ -190,10 +195,11 @@ function start() {
     puffs.push(s); scene.add(s);
   }
 
-  /* ---------- light: the low sun, the sky above, the ground below ---------- */
-  const sun = new THREE.DirectionalLight(0xffcf9c, 2.3); sun.position.copy(sunDir).multiplyScalar(100); scene.add(sun);
-  const back = new THREE.DirectionalLight(0xb9c8e6, .35); back.position.set(40, 30, -50); scene.add(back);
-  scene.add(new THREE.HemisphereLight(0xc2d0e6, 0x6b5f4e, .45));
+  /* ---------- light: the low sun of the photo, with real shadows; the sky itself fills in through the reflections ---------- */
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  const sun = new THREE.DirectionalLight(0xffb070, 4.2); sun.castShadow = true; scene.add(sun, sun.target);
+  sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -.0004; sun.shadow.normalBias = .04;
+  Object.assign(sun.shadow.camera, { left: -48, right: 48, top: 48, bottom: -48, near: 1, far: 400 }); sun.shadow.camera.updateProjectionMatrix();
 
   /* ---------- soft contact shadow: depth seen from under the aircraft, blurred, laid on the tarmac ---------- */
   const SW = 44, SL = 84, SH = 22, SZ = 3;                  // shadow area (width, length), height it looks up, centre along the aircraft
@@ -203,7 +209,7 @@ function start() {
   shadowCam.rotation.x = Math.PI / 2; shadowCam.layers.set(1);
   const depthMat = new THREE.MeshDepthMaterial({ depthTest: false, depthWrite: false });
   depthMat.onBeforeCompile = s => { s.fragmentShader = s.fragmentShader.replace('gl_FragColor = vec4( vec3( 1.0 - fragCoordZ ), opacity );', 'gl_FragColor = vec4( vec3( 0.0 ), pow( 1.0 - fragCoordZ, 2.4 ) * 1.3 );'); };
-  const shadowPlane = new THREE.Mesh(new THREE.PlaneGeometry(SW, SL).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ map: rtA.texture, color: 0x000000, transparent: true, opacity: .8, depthWrite: false }));
+  const shadowPlane = new THREE.Mesh(new THREE.PlaneGeometry(SW, SL).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ map: rtA.texture, color: 0x000000, transparent: true, opacity: .55, depthWrite: false }));
   shadowPlane.position.set(0, .03, SZ); shadowPlane.scale.y = -1; shadowPlane.renderOrder = -8; scene.add(shadowPlane);   // scale flips it to face up
   const blurCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1), blurQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2)), blurScene = new THREE.Scene().add(blurQuad);
   const hBlur = new THREE.ShaderMaterial(HorizontalBlurShader), vBlur = new THREE.ShaderMaterial(VerticalBlurShader);
@@ -221,7 +227,7 @@ function start() {
     scene.overrideMaterial = null;
     const spread = 1 + alt * .12; blur(2.2 * spread); blur(.9 * spread);
     renderer.setRenderTarget(null); renderer.setClearAlpha(clear);
-    shadowPlane.material.opacity = .8 * (1 - THREE.MathUtils.smoothstep(alt, 0, 26));
+    shadowPlane.material.opacity = .55 * (1 - THREE.MathUtils.smoothstep(alt, 0, 26));
   }
 
   /* ---------- the aircraft: rig (altitude) > pitch (about the main bogies) > aircraft ---------- */
@@ -236,10 +242,10 @@ function start() {
   const legs = [];
   {
     const std = (color, roughness, metalness) => new THREE.MeshStandardMaterial({ color, roughness, metalness, envMapIntensity: .9 });
-    const rubber = std(0x0e0f10, .9, 0), alloy = std(0xb9bdc2, .38, .7), chrome = std(0xe6e8ea, .16, 1), paint = std(0xeeeeec, .4, 0), dark = std(0x24262a, .6, .3);
+    const rubber = std(0x101112, .85, 0), alloy = std(0x8d9095, .42, .75), chrome = std(0xd9dbde, .14, 1), dark = std(0x1d1f22, .6, .3);
     let into = gear, off = new THREE.Vector3();
     const leg = (x, y, z, axis, sign) => { const g = new THREE.Group(); g.position.set(x, y, z); gear.add(g); into = g; off.set(x, y, z); legs.push({ g, axis, sign }); };
-    const put = (geo, mat, x, y, z) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z).sub(off); m.layers.enable(1); into.add(m); return m; };
+    const put = (geo, mat, x, y, z) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z).sub(off); m.layers.enable(1); m.castShadow = true; into.add(m); return m; };
     const rod = (mat, r, a, b) => {                          // a cylinder from point a to point b
       const A = new THREE.Vector3(...a), B = new THREE.Vector3(...b), m = put(new THREE.CylinderGeometry(r, r, A.distanceTo(B), 20), mat, 0, 0, 0);
       m.position.copy(A).add(B).multiplyScalar(.5).sub(off); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), B.sub(A).normalize()); return m;
@@ -259,7 +265,6 @@ function start() {
       rod(alloy, .075, [x, 2.05, z], [x - side * 1.5, top, z]);                          // side brace
       rod(alloy, .06, [x, 1.75, z], [x, top - .2, z + 1.5]);                             // drag brace
       rod(dark, .04, [x, .8, z - .26], [x, 1.5, z - .2]);                                // torque link
-      put(new THREE.BoxGeometry(.04, .8, 1.9), paint, x + side * .6, top - .5, z);       // gear door
     }
     // nose gear: a long leg under the forward cabin
     { const z = 15.5, top = STAND + 1.15;
@@ -269,7 +274,6 @@ function start() {
       rod(chrome, .08, [0, .4, z], [0, 1.9, z]); rod(alloy, .13, [0, 1.8, z], [0, top, z]);
       rod(alloy, .055, [0, 2.1, z], [0, top - .1, z + 1.9]);                              // drag brace
       rod(dark, .035, [0, .55, z - .2], [0, 1.55, z - .16]);
-      for (const side of [-1, 1]) put(new THREE.BoxGeometry(.03, .6, 1.8), paint, side * .46, top - .72, z + .1);
     }
   }
   function stow(k) {                                         // 0: gear down, 1: folded away
@@ -303,8 +307,8 @@ function start() {
   new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).load('assets/models/concorde.glb', gltf => {
     gltf.scene.traverse(o => {
       if (!o.isMesh) return;
-      o.layers.enable(1);                                    // layer 1 is what the contact shadow sees
-      const m = o.material; if (m.name !== 'Seal') { m.roughness = .36; m.envMapIntensity = 1; }
+      o.layers.enable(1); o.castShadow = o.receiveShadow = true;   // layer 1 is what the contact shadow sees
+      const m = o.material; if (m.name !== 'Seal') { m.roughness = .32; m.envMapIntensity = .55; }
       if (m.map) m.map.anisotropy = renderer.capabilities.getMaxAnisotropy();
     });
     aircraft.add(gltf.scene); gltf.scene.updateMatrixWorld(true);
@@ -330,6 +334,7 @@ function start() {
   /* ---------- post: speed blur and the inside of the cloud, bloom, then tone mapping, vignette and grain ---------- */
   const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(2, 2, { type: THREE.HalfFloatType, samples: 4 }));
   composer.addPass(new RenderPass(scene, cam));
+  const dof = new BokehPass(scene, cam, { focus: 60, aperture: .00012, maxblur: .0065 }); composer.addPass(dof);   // a long lens: soft sky, soft foreground
   const air = new ShaderPass({
     uniforms: { tDiffuse: { value: null }, speed: { value: 0 }, cloud: { value: 0 }, time: U.time, centre: { value: new THREE.Vector2(.5, .5) } },
     vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }',
@@ -340,8 +345,9 @@ function start() {
       void main(){
         vec2 d = vUv - centre; float r = length(d);
         vec3 c = vec3(0.);                                    // a radial blur that grows towards the edges with speed
-        for (int i = 0; i < 8; i++) c += texture2D(tDiffuse, vUv - d * speed * smoothstep(.12, .7, r) * float(i) / 7.).rgb;
-        c /= 8.;
+        float j = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453);   // jittered taps: a smooth streak, never ghost copies
+        for (int i = 0; i < 12; i++) c += texture2D(tDiffuse, vUv - d * speed * smoothstep(.3, .85, r) * (float(i) + j) / 12.).rgb;
+        c /= 12.;
         if (cloud > 0.) {                                     // inside the deck: soft white wisps racing past
           vec2 q = d * vec2(1.6, 1.) / (r + .3);
           float n = noise(q * 3. + vec2(0., time * 2.6)) * .6 + noise(q * 7. - vec2(time * 1.3, time * 4.)) * .4;
@@ -353,7 +359,7 @@ function start() {
   composer.addPass(air);
   const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), .3, .55, 1.7); composer.addPass(bloom);
   const grade = new ShaderPass({
-    uniforms: { tDiffuse: { value: null }, time: { value: 0 }, grain: { value: .022 }, exposure: { value: 1.02 } },
+    uniforms: { tDiffuse: { value: null }, time: { value: 0 }, grain: { value: .022 }, exposure: { value: .92 } },
     vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }',
     fragmentShader: `uniform sampler2D tDiffuse; uniform float time, grain, exposure; varying vec2 vUv;
       vec3 fit(vec3 v){ vec3 a = v * (v + .0245786) - .000090537; vec3 b = v * (.983729 * v + .4329510) + .238081; return a / b; }
@@ -364,7 +370,10 @@ function start() {
       float hash(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
       void main(){
         vec3 c = aces(texture2D(tDiffuse, vUv).rgb);
+        float l = dot(c, vec3(.2126, .7152, .0722));                // golden hour grade: warm highlights, cool shadows
+        c *= mix(vec3(.9, .97, 1.08), vec3(1.08, 1., .88), smoothstep(.05, .6, l));
         c = mix(c * 12.92, 1.055 * pow(c, vec3(1. / 2.4)) - .055, step(.0031308, c));
+        c = mix(vec3(dot(c, vec3(.33))), c, 1.06); c = (c - .5) * 1.06 + .5;
         vec2 q = vUv - .5; c *= 1. - dot(q, q) * .26;
         c += (hash(gl_FragCoord.xy + time * 917.) - .5) * grain;
         gl_FragColor = vec4(c, 1.); }`
@@ -383,16 +392,17 @@ function start() {
   /* ---------- scroll: one scrubbed timeline for the whole take-off ---------- */
   // camera offsets are measured from the main bogies; fy is how much the camera rises with the aircraft (0: it stays by the runway)
   const S = { deg: 0, sight: 0, dist: 0, pitch: 0, alt: 0, gear: 0, reheat: 0, mach: 0, blur: 0, fy: 1,
-    cx: -96, cy: 7, cz: 6, tx: 0, ty: 4.6, tz: 4, fov: 26 };
+    cx: -150, cy: 5, cz: 20, tx: 0, ty: 4.4, tz: 3, fov: 17 };
   const shot = (cx, cy, cz, tx, ty, tz, fov) => ({ cx, cy, cz, tx, ty, tz, fov });
-  const LINEUP = shot(-46, 4.2, 44, 1, 4.2, 17, 29);       // front three-quarter while the nose comes down
-  const ROLL_A = shot(-21, 1.5, 40, 0, 3.4, 9, 33);        // low by the nose wheel as the roll begins
-  const ROLL_B = shot(-24, 1.7, -44, 0, 3.6, -4, 31);      // swung round behind the wing: reheat and the runway streaming away
-  const ROTATE = shot(-62, 1.6, -4, 0, 5, -1, 27);         // side on for rotation
-  const LIFT = shot(-46, 1.2, -36, 0, 4, 2, 30);           // the camera stays on the ground as the aircraft climbs away
-  const CLIMB = shot(-44, 9, -68, 0, 3, 6, 30);            // chase from behind and above, the airfield falling away
-  const CLOUD = shot(-28, 4, -26, 0, 4, 3, 35);            // close in through the deck
-  const ABOVE = shot(-66, 26, 44, 0, 1, 9, 28);           // side on over the sea of cloud
+  // a long lens throughout, as aviation is filmed: the aircraft fills the frame and the world behind it compresses
+  const LINEUP = shot(-78, 2.2, 92, 0, 4.4, 15, 17);       // front three-quarter while the nose comes down
+  const ROLL_A = shot(-52, 1.1, 92, 0, 3.6, 6, 19);        // low by the nose wheel as the roll begins
+  const ROLL_B = shot(-56, 1.3, -88, 0, 3.8, -2, 18);      // swung round behind the wing: reheat and the runway streaming away
+  const ROTATE = shot(-105, 1.4, -6, 0, 5.2, 0, 16);       // side on for rotation
+  const LIFT = shot(-80, 1, -60, 0, 4, 2, 18);             // the camera stays on the ground as the aircraft climbs away
+  const CLIMB = shot(-70, 12, -105, 0, 3, 6, 19);          // chase from behind and above, the airfield falling away
+  const CLOUD = shot(-40, 5, -38, 0, 4, 3, 24);            // close in through the deck
+  const ABOVE = shot(-100, 34, 66, 0, 1, 9, 18);           // side on over the sea of cloud
   let dirty = true;
   const tl = gsap.timeline({ defaults: { ease: 'power2.inOut' }, onUpdate: () => { dirty = true; },
     scrollTrigger: { trigger: section, start: 'top top', end: 'bottom bottom', scrub: RM ? true : .6 } });
@@ -406,20 +416,20 @@ function start() {
     .to(S, { dist: 5460, mach: .42, duration: .42, ease: 'none' }, .58)             // then onwards at the same speed
     .to(S, { ...ROLL_A, duration: .12 }, .19)
     .to(S, { ...ROLL_B, duration: .16 }, .33)
-    .to(S, { blur: .028, duration: .18, ease: 'power1.in' }, .4)
+    .to(S, { blur: .012, duration: .18, ease: 'power1.in' }, .4)
     .to(S, { ...ROTATE, duration: .08 }, .49)
     .to(S, { pitch: 10, duration: .09, ease: 'sine.inOut' }, .52)                   // rotation
     .set(S, { fy: 0 }, .58)
     .to(S, { alt: 34, duration: .12, ease: 'power1.in' }, .6)                       // lift-off
     .to(S, { pitch: 13, duration: .08, ease: 'sine.inOut' }, .61)
-    .to(S, { ...LIFT, blur: .01, duration: .1 }, .58)
+    .to(S, { ...LIFT, blur: .004, duration: .1 }, .58)
     .to(S, { gear: 1, duration: .09, ease: 'power1.inOut' }, .68)
     .to(S, { ...CLIMB, fy: 1, duration: .12 }, .7)
     .to(S, { alt: 250, duration: .14, ease: 'power1.inOut' }, .72)
     .to(S, { deg: 0, duration: .1 }, .74)                                           // nose back up for the climb
     .to(S, { reheat: 0, duration: .06, ease: 'power1.in' }, .8)
     .to(S, { alt: 470, duration: .12, ease: 'power1.inOut' }, .86)
-    .to(S, { ...CLOUD, blur: .02, duration: .08 }, .84)
+    .to(S, { ...CLOUD, blur: .008, duration: .08 }, .84)
     .to(S, { ...ABOVE, blur: 0, duration: .08 }, .92)
     .to(S, { pitch: 7, duration: .1 }, .9)
     .set({}, {}, 1);
@@ -448,6 +458,8 @@ function start() {
       if (!RM) { const t = ms / 1000, k = S.reheat * (S.alt < 1 ? .06 : .012) * (.3 + S.mach * 2.4);
         shake.set(Math.sin(t * 37) * Math.sin(t * 13), Math.sin(t * 41 + 1) * Math.sin(t * 17), 0).multiplyScalar(k); cam.position.add(shake); }
       cam.lookAt(target);
+      sun.target.position.set(0, S.alt, 0); sun.position.copy(sunDir).multiplyScalar(150).add(sun.target.position);
+      dof.uniforms.focus.value = cam.position.distanceTo(target);
       if (cam.fov !== S.fov) { cam.fov = S.fov; cam.updateProjectionMatrix(); }
       scale = canvas.height / (2 * Math.tan(cam.fov * DEG / 2)); lightMat.uniforms.scale.value = scale;
       // speed blur centred on the aircraft
@@ -459,7 +471,7 @@ function start() {
       for (const p of puffs) { const u = p.userData, z = ((u.z0 - S.dist * .9) % 2600 + 2600) % 2600 - 1300;
         p.position.set(u.x, u.y, z); const d = p.position.distanceTo(cam.position);
         p.material.opacity = u.o * (1 - THREE.MathUtils.smoothstep(Math.abs(z), 900, 1300)) * THREE.MathUtils.smoothstep(d, 20, 90) * Math.exp(-d / 5000)
-          * (1 - THREE.MathUtils.smoothstep(cam.position.y, TOPS + 4, TOPS + 30)); }   // gone once the aircraft is above the deck
+          * (1 - THREE.MathUtils.smoothstep(cam.position.y, TOPS + 4, TOPS + 30)) * THREE.MathUtils.smoothstep(cam.position.y, 150, 260); }   // gone once the aircraft is above the deck
       const key = [S.deg.toFixed(2), S.pitch.toFixed(2), S.alt.toFixed(1), S.gear.toFixed(2)].join();
       if (nosePivot && key !== shownKey && S.alt < 40) { castShadow(S.alt); shownKey = key; }
       shadowPlane.visible = S.alt < 30;
