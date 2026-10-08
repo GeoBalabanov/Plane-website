@@ -93,7 +93,7 @@ function start() {
         vec3 field = grass * (h < .3 ? vec3(1.35, 1.05, .7) : h < .55 ? vec3(.7, .85, .6) : h < .8 ? vec3(1.1, 1., .75) : vec3(.9, .75, .6));
         field = mix(field * .5, field, smoothstep(3., 14., edge));
         float airfield = smoothstep(560., 480., ax) * smoothstep(-1300., -1100., z) * smoothstep(5300., 5100., z);
-        vec3 col = mix(field, grass, airfield);
+        vec3 col = mix(field, grass * vec3(.78, .86, .62), airfield);   // under the blades: the shade inside thick grass
         // paved: runway (45 m) with shoulders, a parallel taxiway and four links between them
         float run = band(z, -300., 3900.) * band(ax, -1., 22.5), shoulder = band(z, -300., 3900.) * band(ax, 22.5, 30.);
         float twy = band(z, -900., 4500.) * band(x, 168.5, 191.5);
@@ -206,8 +206,8 @@ function start() {
   }
   const GT = 56;
   const fields = [
-    makeGrass({ T: GT, count: PHONE ? 26000 : 70000, blades: 3, spread: .06, h: [.08, .26], w: [.007, .012], seg: 3 }),
-    makeGrass({ T: 240, count: PHONE ? 22000 : 60000, blades: 6, spread: .45, h: [.18, .36], w: [.025, .04], hole: GT * .5, seg: 2 }),
+    makeGrass({ T: GT, count: PHONE ? 34000 : 95000, blades: 3, spread: .07, h: [.08, .26], w: [.007, .012], seg: 3 }),
+    makeGrass({ T: 200, count: PHONE ? 36000 : 110000, blades: 7, spread: .5, h: [.18, .36], w: [.025, .04], hole: GT * .5, seg: 1 }),
   ];
   const grass = { set visible(v) { fields.forEach(f => f.mesh.visible = v); }, get visible() { return fields[0].mesh.visible; } };
 
