@@ -375,24 +375,51 @@ function start() {
     for (const { g, axis, sign } of legs) { g.rotation[axis] = sign * k * Math.PI / 2; g.visible = k < .97; }
   }
 
-  /* Reheat: Olympus afterburner flames from the four nozzles, with the bright bands of shock diamonds */
-  const flameMat = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
-    uniforms: { time: U.time, power: { value: 0 } },
-    vertexShader: `varying float along; varying float rim; uniform float power;
-      void main(){ along = -position.z / 7.; vec3 n = normalize(normalMatrix * normal); vec4 mv = modelViewMatrix * vec4(position, 1.);
+  /* Reheat: the Olympus afterburners. Each engine has a short white-hot core, an orange plume around it with four
+     shock diamonds (the bright bands where the jet re-compresses), soft turbulent edges and a glowing nozzle mouth.
+     The air pass below adds the heat haze behind them. */
+  const flameU = { time: U.time, power: { value: 0 } };
+  const flameMat = (len, core) => new THREE.ShaderMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+    uniforms: flameU,
+    vertexShader: `varying float along, rim, ang; void main(){
+        along = -position.z / ${len.toFixed(2)}; ang = atan(position.y, position.x);
+        vec3 n = normalize(normalMatrix * normal); vec4 mv = modelViewMatrix * vec4(position, 1.);
         rim = abs(dot(n, normalize(-mv.xyz))); gl_Position = projectionMatrix * mv; }`,
-    fragmentShader: `uniform float time, power; varying float along; varying float rim;
+    fragmentShader: `uniform float time, power; varying float along, rim, ang;
+      float h(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+      float n2(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f);
+        return mix(mix(h(i), h(i + vec2(1, 0)), f.x), mix(h(i + vec2(0, 1)), h(i + vec2(1)), f.x), f.y); }
       void main(){
-        float diamonds = .55 + .45 * smoothstep(.55, 1., cos(along * 6.283 * 3.2 - .6));
-        float flick = .86 + .14 * sin(time * 47. + along * 23.) * sin(time * 31. - along * 11.);
-        vec3 c = mix(vec3(1., .82, .62) * 5., vec3(1., .38, .1) * 2.2, smoothstep(0., .8, along));
-        float a = pow(1. - along, 1.6) * pow(rim, 1.4) * diamonds * flick * power;
-        gl_FragColor = vec4(c * a, 1.); }` });
-  const flameGeo = new THREE.CylinderGeometry(.62, .16, 7, 28, 24, true).rotateX(Math.PI / 2).translate(0, 0, -3.5);
-  const coreGeo = new THREE.CylinderGeometry(.4, .05, 4.4, 20, 12, true).rotateX(Math.PI / 2).translate(0, 0, -2.2);
-  for (const x of [-6.2, -4.75, 4.75, 6.2]) for (const geo of [flameGeo, coreGeo]) {
-    const f = new THREE.Mesh(geo, flameMat); f.position.set(x, .73, -15.05); f.renderOrder = 2; aircraft.add(f);
+        // turbulence flowing out of the nozzle
+        float tb = n2(vec2(along * 9. - time * 38., ang * 2.2)) * .6 + n2(vec2(along * 23. - time * 61., ang * 4.)) * .4;
+        float body = pow(rim, ${core ? '1.2' : '2.4'}) * pow(1. - along, ${core ? '2.2' : '1.3'});
+        ${core ? `
+        vec3 c = mix(vec3(1., .86, .62) * 2.6, vec3(1., .55, .2) * 1.7, smoothstep(0., 1., along));
+        float a = body * (.8 + .25 * tb);` : `
+        // shock diamonds: four bright cells that shrink and fade down the plume
+        float cells = 0.; for (int i = 1; i <= 4; i++){ float c0 = float(i) * .17; cells += exp(-pow((along - c0) * 32., 2.)) * (1.15 - float(i) * .2); }
+        vec3 c = mix(vec3(1., .5, .17) * 1.9, vec3(.9, .22, .05) * 1.1, smoothstep(.05, .9, along));
+        c += vec3(1., .72, .42) * cells * 2.8 * pow(rim, 3.);
+        float a = body * (.55 + .7 * tb) * smoothstep(1., .55, along + tb * .25);`}
+        float flick = .88 + .12 * sin(time * 53. + along * 17.) * sin(time * 37.);
+        gl_FragColor = vec4(c * a * flick * power, 1.); }` });
+  const plumeMat = flameMat(7, false), coreMat = flameMat(2.4, true);
+  const plumeGeo = new THREE.CylinderGeometry(.62, .12, 7, 32, 48, true).rotateX(Math.PI / 2).translate(0, 0, -3.5);
+  const coreGeo = new THREE.CylinderGeometry(.42, .04, 2.4, 24, 16, true).rotateX(Math.PI / 2).translate(0, 0, -1.2);
+  // the glowing mouth of each nozzle: a soft disc facing back
+  const mouthTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+    const r = g.createRadialGradient(64, 64, 0, 64, 64, 64); r.addColorStop(0, '#fff'); r.addColorStop(.35, 'rgba(255,190,120,.85)'); r.addColorStop(1, 'rgba(255,120,40,0)');
+    g.fillStyle = r; g.fillRect(0, 0, 128, 128); return new THREE.CanvasTexture(c); })();
+  const mouthMat = new THREE.MeshBasicMaterial({ map: mouthTex, color: new THREE.Color(2.2, 1.4, .8), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0 });
+  const flames = [];
+  for (const x of [-6.2, -4.75, 4.75, 6.2]) {
+    const g = new THREE.Group(); g.position.set(x, .73, -15.05); aircraft.add(g);
+    const plume = new THREE.Mesh(plumeGeo, plumeMat), core = new THREE.Mesh(coreGeo, coreMat), mouth = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.5), mouthMat);
+    mouth.rotation.y = Math.PI; mouth.position.z = -.05;
+    for (const m of [plume, core, mouth]) { m.renderOrder = 2; g.add(m); }
+    flames.push(g);
   }
+  const NOZZLE = new THREE.Vector3(0, .73, -15.05);           // between the four nozzles, for the heat haze
 
   let nosePivot = null, profile = [];
   const EYE = new THREE.Vector3(0, 3.38, 25.4);             // pilot's eye, in the aircraft frame
@@ -430,19 +457,28 @@ function start() {
   const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(2, 2, { type: THREE.HalfFloatType, samples: 4 }));
   composer.addPass(new RenderPass(scene, cam));
   const dof = new BokehPass(scene, cam, { focus: 60, aperture: .00012, maxblur: .0065 }); composer.addPass(dof);   // a long lens: soft sky, soft foreground
-  { const r = dof.render.bind(dof); dof.render = (...a) => { const v = grass.visible; grass.visible = false; r(...a); grass.visible = v; }; }   // its depth pass cannot follow the blades: the ground beneath stands in
+  { const r = dof.render.bind(dof); dof.render = (...a) => { const v = grass.visible; grass.visible = false; flames.forEach(f => f.visible = false); r(...a); grass.visible = v; flames.forEach(f => f.visible = true); }; }   // its depth pass cannot follow the blades or see through flames: what lies behind stands in
   const air = new ShaderPass({
-    uniforms: { tDiffuse: { value: null }, speed: { value: 0 }, cloud: { value: 0 }, time: U.time, centre: { value: new THREE.Vector2(.5, .5) } },
+    uniforms: { tDiffuse: { value: null }, speed: { value: 0 }, cloud: { value: 0 }, time: U.time, centre: { value: new THREE.Vector2(.5, .5) },
+      hazeA: { value: new THREE.Vector2() }, hazeB: { value: new THREE.Vector2() }, hazeR: { value: 0 }, haze: { value: 0 }, aspect: { value: 1 } },
     vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }',
-    fragmentShader: `uniform sampler2D tDiffuse; uniform float speed, cloud, time; uniform vec2 centre; varying vec2 vUv;
+    fragmentShader: `uniform sampler2D tDiffuse; uniform float speed, cloud, time, hazeR, haze, aspect; uniform vec2 centre, hazeA, hazeB; varying vec2 vUv;
       float hash(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
       float noise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f);
         return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1)), f.x), f.y); }
       void main(){
-        vec2 d = vUv - centre; float r = length(d);
+        vec2 uv = vUv;
+        if (haze > 0.) {                                      // heat haze: the air behind the nozzles wobbles
+          vec2 ab = (hazeB - hazeA) * vec2(aspect, 1.), ap = (uv - hazeA) * vec2(aspect, 1.);
+          float t = clamp(dot(ap, ab) / max(dot(ab, ab), 1e-6), 0., 1.), dd = length(ap - ab * t);
+          float m = smoothstep(hazeR * (.6 + t * 1.6), 0., dd) * (1. - t) * smoothstep(0., .04, t) * haze;
+          vec2 q = uv * vec2(aspect, 1.) * 55.;
+          uv += (vec2(noise(q + vec2(time * 7., -time * 19.)), noise(q * 1.3 - vec2(time * 11., time * 23.))) - .5) * .009 * m;
+        }
+        vec2 d = uv - centre; float r = length(d);
         vec3 c = vec3(0.);                                    // a radial blur that grows towards the edges with speed
         float j = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453);   // jittered taps: a smooth streak, never ghost copies
-        for (int i = 0; i < 12; i++) c += texture2D(tDiffuse, vUv - d * speed * smoothstep(.3, .85, r) * (float(i) + j) / 12.).rgb;
+        for (int i = 0; i < 12; i++) c += texture2D(tDiffuse, uv - d * speed * smoothstep(.3, .85, r) * (float(i) + j) / 12.).rgb;
         c /= 12.;
         if (cloud > 0.) {                                     // inside the deck: soft white wisps racing past
           vec2 q = d * vec2(1.6, 1.) / (r + .3);
@@ -545,7 +581,7 @@ function start() {
     if (dirty || live) {
       aim(S.deg); sight.material.opacity = .95 * S.sight;
       rig.position.y = S.alt; pitch.rotation.x = -S.pitch * DEG; stow(S.gear);
-      U.dist.value = S.dist; flameMat.uniforms.power.value = S.reheat;
+      U.dist.value = S.dist; flameU.power.value = S.reheat; mouthMat.opacity = Math.min(1, S.reheat * 1.4);
       // the camera: offset from the bogies, stepped back on a tall screen, with the rumble of the runway
       const pull = Math.max(1, 1.5 / cam.aspect);
       target.set(S.tx, S.ty + S.alt, S.tz + MAIN_Z);
@@ -564,6 +600,14 @@ function start() {
       scale = canvas.height / (2 * Math.tan(cam.fov * DEG / 2)); lightMat.uniforms.scale.value = scale;
       // speed blur centred on the aircraft
       const c = target.clone().project(cam); air.uniforms.centre.value.set(c.x * .5 + .5, c.y * .5 + .5); air.uniforms.speed.value = RM ? 0 : S.blur;
+      // heat haze from the nozzles back 30 m, as wide on screen as the engines
+      { aircraft.updateMatrixWorld(true);
+        const a3 = aircraft.localToWorld(NOZZLE.clone()), b3 = aircraft.localToWorld(NOZZLE.clone().setZ(-45)), s3 = aircraft.localToWorld(NOZZLE.clone().setX(7));
+        const pa = a3.clone().project(cam), pb = b3.clone().project(cam), ps = s3.clone().project(cam);
+        air.uniforms.hazeA.value.set(pa.x * .5 + .5, pa.y * .5 + .5); air.uniforms.hazeB.value.set(pb.x * .5 + .5, pb.y * .5 + .5);
+        air.uniforms.aspect.value = cam.aspect;
+        air.uniforms.hazeR.value = Math.max(.02, Math.hypot((ps.x - pa.x) * .5 * cam.aspect, (ps.y - pa.y) * .5));
+        air.uniforms.haze.value = RM || pa.z > 1 ? 0 : S.reheat; }
       // inside the cloud deck the picture goes white
       const y = cam.position.y, inside = THREE.MathUtils.smoothstep(y, BASE - 6, BASE + 14) * (1 - THREE.MathUtils.smoothstep(y, TOPS - 10, TOPS + 8));
       air.uniforms.cloud.value = inside;
