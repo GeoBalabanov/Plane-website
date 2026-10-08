@@ -473,3 +473,14 @@ html.walking .cta,html.walking .hud,html.walking .stagebar{opacity:0!important;p
   .walk-info{bottom:calc(env(safe-area-inset-bottom,0px) + 100px)}
 }
 @media (prefers-reduced-motion:reduce){.xhot .ring::after{animation:none}}
+
+/* the tour rings open the walk; the photo itself invites a click */
+.hot.live{pointer-events:auto;cursor:pointer}
+.hot.live .ring{transition:transform .3s var(--out),background-color .3s var(--out)}
+.hot.live:hover .ring,.hot.live:focus-visible .ring{transform:scale(1.18);background:rgba(255,255,255,.32)}
+.hot.live:focus-visible{outline:none}
+.hot.live:focus-visible .ring{box-shadow:0 0 0 3px var(--flame)}
+#cabin:not(.exploring) #cabin3d{cursor:pointer}
+.walk-in::after{content:"";position:absolute;inset:-1px;border-radius:inherit;border:1.5px solid rgba(255,90,31,.85);opacity:0;animation:walkping 2.4s cubic-bezier(.2,.7,.3,1) infinite}
+@keyframes walkping{0%{opacity:.9;transform:scale(1)}100%{opacity:0;transform:scale(1.25,1.6)}}
+@media (prefers-reduced-motion:reduce){.walk-in::after{animation:none}}

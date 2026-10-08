@@ -53,6 +53,23 @@
   }
   addEventListener('concorde:boom', boom);
 
+  // footsteps on the cabin carpet: a soft heel thud and the brush of a sole, never twice the same
+  let noise = null;
+  function step(e) {
+    if (!on || !ctx) return;
+    const s = clamp(e.detail && e.detail.strength || .6, .25, 1), t = ctx.currentTime, left = e.detail && e.detail.left;
+    if (!noise) noise = noiseBuffer(1, false);
+    const thud = ctx.createBufferSource(); thud.buffer = noise; thud.playbackRate.value = .8 + Math.random() * .3;
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 170 + Math.random() * 60 + (left ? 0 : 25); lp.Q.value = 1.2;
+    const g1 = ctx.createGain(); g1.gain.setValueAtTime(.0001, t); g1.gain.exponentialRampToValueAtTime(1.6 * s, t + .012); g1.gain.exponentialRampToValueAtTime(.0001, t + .16);
+    thud.connect(lp).connect(g1).connect(master); thud.start(t, Math.random() * .8, .2);
+    const brush = ctx.createBufferSource(); brush.buffer = noise;
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1300 + Math.random() * 700; bp.Q.value = .7;
+    const g2 = ctx.createGain(); g2.gain.setValueAtTime(.0001, t + .02); g2.gain.exponentialRampToValueAtTime(.09 * s, t + .05); g2.gain.exponentialRampToValueAtTime(.0001, t + .14);
+    brush.connect(bp).connect(g2).connect(master); brush.start(t, Math.random() * .8, .16);
+  }
+  addEventListener('concorde:step', step);
+
   // what the aircraft sounds like at each point of the page: [engine level, engine brightness Hz, cabin hum, whine]
   const ids = ['boarding', 'cabin', 'droop', 'boom', 'mach2', 'cruise', 'arrival', 'end'];
   const prog = id => { const s = document.getElementById(id); if (!s) return -1; const r = s.getBoundingClientRect(), span = s.offsetHeight - innerHeight;
@@ -82,5 +99,7 @@
     clearInterval(timer); if (on) { mix(); timer = setInterval(mix, 120); }
     else if (ctx) setTimeout(() => { if (!on) ctx.suspend(); }, 600);
   }
-  btn.addEventListener('click', () => set(!on));
+  let chose = false;                                          // once the visitor uses the switch, their choice stands
+  btn.addEventListener('click', () => { chose = true; set(!on); });
+  addEventListener('concorde:sound-wish', () => { if (!chose && !on) set(true); });
 })();

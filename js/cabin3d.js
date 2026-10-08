@@ -84,8 +84,11 @@ function start() {
   // put the camera in a photo at a pose (metres forward, turn left, look up, horizontal lens)
   function aim(photo, q, t) {
     const sway = RM ? 0 : 1, P = PHOTOS[photo];
-    cam.position.set(Math.sin(t * .00031) * .02 * sway, Math.sin(t * .00047) * .012 * sway, -q.z);   // a slow breath, like walking
-    cam.rotation.set(q.pitch * DEG, q.yaw * DEG, 0, 'YXZ');
+    // a walker's head: it bobs once a step, sways from foot to foot and rolls a little; standing still, it barely stirs
+    const a = G.amp * sway, gp = G.phase, hold = .35 * sway;
+    const nx = Math.sin(t * .0011) * Math.sin(t * .00037 + 1), ny = Math.sin(t * .0013 + 2) * Math.sin(t * .00029);
+    cam.position.set(Math.sin(gp) * .035 * a + Math.sin(t * .00031) * .012 * sway, -Math.abs(Math.cos(gp)) * .045 * a + .02 * a + Math.sin(t * .00047) * .008 * sway, -q.z);
+    cam.rotation.set((q.pitch + Math.sin(gp * 2) * .55 * a + ny * .25 * hold) * DEG, (q.yaw + Math.sin(gp) * .5 * a + nx * .3 * hold) * DEG, Math.sin(gp) * .9 * a * DEG, 'YXZ');
     // the lens never sees past the edges of the photo, however far you turn: it narrows instead
     const ph = P.hfov / 2 * .96 - Math.abs(q.yaw), pv = Math.atan(Math.tan(P.hfov * DEG / 2) * .75) / DEG * .96 - Math.abs(q.pitch);
     const h = Math.min(q.fov, 2 * ph);
@@ -94,6 +97,15 @@ function start() {
     cam.updateMatrixWorld();
   }
   const place = (photo, p, t) => aim(photo, pose(photo, p), t);
+  // the gait: amp is how hard you are walking (0 to 1), phase runs one stride (two steps) per 2 pi
+  const G = { amp: 0, phase: 0, foot: 0 };
+  function gait(speed, dt) {
+    G.amp += (clamp(speed) - G.amp) * (1 - Math.exp(-dt * (speed > G.amp ? 6 : 3)));
+    if (G.amp < .02) return;
+    G.phase += dt * Math.PI * 2 * .9 * (.6 + .4 * G.amp);   // a little under two steps a second
+    const foot = Math.floor(G.phase / Math.PI);             // a foot lands at the bottom of each bob
+    if (foot !== G.foot) { G.foot = foot; dispatchEvent(new CustomEvent('concorde:step', { detail: { strength: G.amp, left: foot % 2 === 0 } })); }
+  }
 
   /* ---------- walk inside: free look, step forward and back, things to click ---------- */
   const SPOTS = [
@@ -163,12 +175,14 @@ function start() {
     const S = SPOTS[X.spot], nz = X.zT + d * .3;
     if (nz > S.z[1] + .05) return go(X.spot + 1, false);
     if (nz < S.z[0] - .05) return go(X.spot - 1, true);
-    X.zT = clamp(nz, S.z[0], S.z[1]); hideHint();
+    X.zT = clamp(nz, S.z[0], S.z[1]); X.yawT *= .35; X.pitchT *= .35; hideHint();   // you look ahead when you walk
   }
   const look = (dy, dp) => { X.yawT = clamp(X.yawT + dy, -lim.yaw, lim.yaw); X.pitchT = clamp(X.pitchT + dp, lim.down, lim.up); };
   let hinted = false; const hideHint = () => { if (!hinted) { hinted = true; ui.hint.classList.add('gone'); } };
-  function enter() {
-    X.on = true; X.spot = -1; go(0); X.from = -1; X.k = 1;
+  function enter(spot = 0, thing = -1) {
+    X.on = true; X.spot = -1; go(spot); X.from = -1; X.k = 1;
+    if (thing >= 0) setTimeout(() => X.on && openThing(thing), RM ? 0 : 250);
+    dispatchEvent(new CustomEvent('concorde:sound-wish'));   // footsteps want sound: on, unless the visitor turned it off
     document.documentElement.classList.add('walking'); section.classList.add('exploring');
     if (window.lenis) window.lenis.stop();
     ui.exit.focus({ preventScroll: true }); dirty = true;
@@ -180,7 +194,7 @@ function start() {
     ui.btn.focus({ preventScroll: true }); dirty = true;
   }
   if (ui.btn) {
-    ui.btn.addEventListener('click', enter); ui.exit.addEventListener('click', leave);
+    ui.btn.addEventListener('click', () => enter(spotAt(lastP))); ui.exit.addEventListener('click', leave);
     ui.fwd.addEventListener('click', () => step(1)); ui.back.addEventListener('click', () => step(-1));
     ui.spots.forEach((b, i) => b.addEventListener('click', () => go(i, i < X.spot)));
     ui.info.querySelector('.x').addEventListener('click', closeThing);
@@ -205,6 +219,18 @@ function start() {
       else if (k === ' ' || k === 'PageDown' || k === 'PageUp' || k === 'Home' || k === 'End') e.preventDefault();   // the page stays put while walking
     });
   }
+  // from the scroll tour: which spot the story is at, and what each tour ring opens
+  const spotAt = p => p < .17 ? 0 : p < .47 ? 1 : p < .8 ? 2 : 3;
+  const HOT_THING = [[0, 0], [1, 6], [0, 2], [2, 8], [3, 14]];
+  HOTS.forEach((_, i) => {
+    const el = document.getElementById('hot' + i); if (!el) return;
+    el.setAttribute('role', 'button'); el.setAttribute('tabindex', '-1');
+    el.setAttribute('aria-label', el.textContent.trim() + ': walk inside and read more');
+    const open = e => { e.stopPropagation(); enter(...HOT_THING[i]); };
+    el.addEventListener('click', open);
+    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(e); } });
+  });
+  canvas.addEventListener('click', () => { if (!X.on) enter(spotAt(lastP)); });
   // the scroll tour fades the button in once the scene has started
   const btnShow = p => { if (ui.btn) ui.btn.classList.toggle('on', !X.on && p > .03 && p < .985); };
 
@@ -220,6 +246,7 @@ function start() {
     if (X.on) {
       // ease towards where the visitor is walking and looking
       const e = RM ? 1 : 1 - Math.exp(-dt * 7);
+      gait(X.k < 1 ? 1 : Math.abs(X.zT - X.z) * 6, dt);   // walking while the feet still have ground to cover
       X.z += (X.zT - X.z) * e; X.yaw += (X.yawT - X.yaw) * e; X.pitch += (X.pitchT - X.pitch) * e;
       if (X.k < 1) X.k = Math.min(1, (t - X.t0) / 900);   // the walk between spots takes 0.9 s, however fast the screen draws
       const S = SPOTS[X.spot], q = { z: X.z, yaw: X.yaw, pitch: X.pitch - 1, fov: S.fov };
@@ -244,6 +271,7 @@ function start() {
       hots.forEach(el => el && (el.style.opacity = 0));
       return;
     }
+    gait(lastP < 0 ? 0 : Math.abs(p - lastP) / dt * 9, dt);                  // scrolling down the aisle is walking down it
     if (p === lastP && !dirty && RM) return;
     lastP = p; dirty = false;
     // which photos are on screen: one, or two while one fades into the next
@@ -266,6 +294,7 @@ function start() {
       const on = proj.z < 1 && Math.abs(proj.x) < 1.05 && Math.abs(proj.y) < 1.05;
       el.style.transform = `translate(${(proj.x + 1) / 2 * W}px, ${(1 - proj.y) / 2 * H}px)`;
       el.style.opacity = on ? w : 0;
+      el.classList.toggle('live', on && w > .5); el.tabIndex = on && w > .5 ? 0 : -1;
     });
   }
   requestAnimationFrame(frame);
