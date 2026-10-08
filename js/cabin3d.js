@@ -2,7 +2,8 @@
    map (estimated with Depth Anything V2), so the camera can walk into them: down the aisle, a look at the small
    windows and the low ceiling, up to the Machmeter on the front bulkhead, through the door onto the flight deck.
    Photos: BenTanXiaoMing (CC BY-SA 4.0) and Alan Wilson (CC BY-SA 2.0), via Wikimedia Commons.
-   The scroll progress of the section drives the camera; the hotspots follow points in the photos. */
+   The scroll progress of the section drives the camera; the hotspots follow points in the photos.
+   "Walk inside" pauses the page: then you drag to look, step forward and back from spot to spot, and click things. */
 import * as THREE from 'three';
 
 const canvas = document.getElementById('cabin3d'), section = document.getElementById('cabin');
@@ -80,23 +81,169 @@ function start() {
     for (const k of ['z', 'yaw', 'pitch', 'fov']) o[k] = lerp(s.a[k], s.b[k], t);
     return o;
   };
-  function place(photo, p, t) {
-    const q = pose(photo, p), sway = RM ? 0 : 1;
+  // put the camera in a photo at a pose (metres forward, turn left, look up, horizontal lens)
+  function aim(photo, q, t) {
+    const sway = RM ? 0 : 1, P = PHOTOS[photo];
     cam.position.set(Math.sin(t * .00031) * .02 * sway, Math.sin(t * .00047) * .012 * sway, -q.z);   // a slow breath, like walking
     cam.rotation.set(q.pitch * DEG, q.yaw * DEG, 0, 'YXZ');
-    // the lens never sees past the edges of the photo: on a wide screen the width limits it, on a phone the height
-    const P = PHOTOS[photo], pv = 2 * Math.atan(Math.tan(P.hfov * DEG / 2) * .75) / DEG;
-    const fov = Math.min(2 * Math.atan(Math.tan(q.fov * DEG / 2) / cam.aspect) / DEG, pv * .9 - Math.abs(q.pitch) * .4);
+    // the lens never sees past the edges of the photo, however far you turn: it narrows instead
+    const ph = P.hfov / 2 * .96 - Math.abs(q.yaw), pv = Math.atan(Math.tan(P.hfov * DEG / 2) * .75) / DEG * .96 - Math.abs(q.pitch);
+    const h = Math.min(q.fov, 2 * ph);
+    const fov = Math.max(12, Math.min(2 * Math.atan(Math.tan(h * DEG / 2) / cam.aspect) / DEG, 2 * pv));
     if (cam.fov !== fov) { cam.fov = fov; cam.updateProjectionMatrix(); }
     cam.updateMatrixWorld();
   }
+  const place = (photo, p, t) => aim(photo, pose(photo, p), t);
+
+  /* ---------- walk inside: free look, step forward and back, things to click ---------- */
+  const SPOTS = [
+    { photo: 'aisle', name: 'Aisle', z: [0, 1.1], fov: 62 },
+    { photo: 'cabin', name: 'Cabin', z: [0, .7], fov: 62 },
+    { photo: 'mach', name: 'Front wall', z: [0, .9], fov: 62 },
+    { photo: 'deck', name: 'Flight deck', z: [-.15, .25], fov: 64 },
+  ];
+  // [spot, u, v, title, text]: u and v are measured in the photo, from its top left
+  const THINGS = [
+    [0, .26, .62, 'Leather seats', 'Two seats on each side of the aisle, about 100 passengers in all. Every seat is next to a window or the aisle.'],
+    [0, .09, .58, 'A small window', 'The windows are tiny because of the pressure difference at about 60,000 ft.'],
+    [0, .5, .25, 'Low ceiling', 'The cabin is narrow and the ceiling is low. The whole aircraft is slim so it can fly at Mach 2.'],
+    [0, .14, .33, 'Overhead bins', 'Small bins above the seats. In a slim cabin there is little room for bags.'],
+    [0, .5, .86, 'One aisle', 'A single narrow aisle runs the length of the cabin, from the back to the front wall.'],
+    [1, .5, .53, 'Service trolley', 'Champagne and a full meal were served on board, even on a flight of about 3.5 hours.'],
+    [1, .79, .53, 'Look outside', 'From about 60,000 ft you can see the curve of the Earth.'],
+    [1, .66, .62, 'Seat covers', 'This Concorde is now in a museum, so the seats wear clear covers to protect the leather.'],
+    [2, .105, .53, 'Mach', 'Passengers could read their speed here. Mach 2.00 is twice the speed of sound.'],
+    [2, .225, .53, 'Feet', 'Height in feet. Concorde cruised at about 60,000 ft, far above other airliners.'],
+    [2, .765, .53, 'Outside air', 'Minus 55°C outside. Even so, at Mach 2 the nose heats up to about 127°C and the plane stretches by some centimetres.'],
+    [2, .875, .53, 'Miles per hour', '1,380 mph, about 2,200 km/h. London to New York in about 3.5 hours instead of 7 or more.'],
+    [2, .5, .45, 'Flight deck door', 'Through here is the flight deck, where three crew flew the aircraft.'],
+    [3, .49, .69, 'Thrust levers', 'Four levers, one for each Olympus engine. Reheat helped Concorde from Mach 0.95 to 1.7.'],
+    [3, .49, .52, 'Engine gauges', 'The rows of round dials in the middle show how the four engines are running.'],
+    [3, .5, .17, 'Visor and nose', 'For take-off the nose drops 5 degrees and for landing 12.5, so the pilots can see past it.'],
+    [3, .25, .6, 'Captain', 'The captain sits on the left, the first officer on the right.'],
+    [3, .95, .55, 'Flight engineer', 'The third crew member faces a whole wall of dials on the right: fuel, engines and systems.'],
+  ];
+  const X = { on: false, spot: 0, z: 0, yaw: 0, pitch: 0, zT: 0, yawT: 0, pitchT: 0, from: -1, k: 1, open: -1 };
+  const ui = {
+    root: section, btn: document.getElementById('walk-in'), exit: document.getElementById('walk-exit'),
+    fwd: document.getElementById('walk-fwd'), back: document.getElementById('walk-back'), spots: [...document.querySelectorAll('#walk-spots button')],
+    name: document.getElementById('walk-spot'), info: document.getElementById('walk-info'), hint: document.getElementById('walk-hint'), layer: document.getElementById('walk-things'),
+  };
+  const thingEls = THINGS.map(([spot, , , title], i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'xhot'; b.dataset.i = i;
+    b.innerHTML = `<span class="ring" aria-hidden="true"></span><span class="tag">${title}</span>`;
+    b.setAttribute('aria-label', `${title}, ${SPOTS[spot].name}`);
+    b.addEventListener('click', e => { e.stopPropagation(); openThing(i); });
+    ui.layer && ui.layer.appendChild(b); return b;
+  });
+  const lim = { yaw: 16, up: 14, down: -12 };
+  function openThing(i) {
+    const [spot, u, v, title, text] = THINGS[i], ph = photos[SPOTS[spot].photo]; if (!ph) return;
+    X.open = i;
+    // turn your head towards it
+    const pt = ph.point(u, v), dx = pt.x, dy = pt.y, dz = pt.z + X.z;
+    X.yawT = clamp(Math.atan2(-dx, -dz) / DEG, -lim.yaw, lim.yaw); X.pitchT = clamp(Math.atan2(dy, Math.hypot(dx, dz)) / DEG, lim.down, lim.up);
+    ui.info.querySelector('.label span').textContent = SPOTS[spot].name;
+    ui.info.querySelector('h3').textContent = title; ui.info.querySelector('p').textContent = text;
+    ui.info.hidden = false; requestAnimationFrame(() => ui.info.classList.add('on'));
+    thingEls.forEach((b, j) => b.classList.toggle('on', j === i));
+    hideHint();
+  }
+  function closeThing() { X.open = -1; ui.info.classList.remove('on'); thingEls.forEach(b => b.classList.remove('on')); setTimeout(() => { if (X.open < 0) ui.info.hidden = true; }, 400); }
+  function go(spot, back) {
+    if (spot < 0 || spot >= SPOTS.length || spot === X.spot) return;
+    closeThing();
+    X.from = X.spot; X.k = RM ? 1 : 0; X.t0 = performance.now(); X.spot = spot;
+    const z = back ? SPOTS[spot].z[1] : SPOTS[spot].z[0];
+    X.z = X.zT = z; X.yaw = X.yawT = 0; X.pitch = X.pitchT = 0;
+    ui.spots.forEach((b, i) => b.setAttribute('aria-current', i === spot ? 'true' : 'false'));
+    ui.name.textContent = SPOTS[spot].name;
+  }
+  function step(d) {                                         // one step forward (1) or back (-1); past the end of a spot you walk into the next
+    const S = SPOTS[X.spot], nz = X.zT + d * .3;
+    if (nz > S.z[1] + .05) return go(X.spot + 1, false);
+    if (nz < S.z[0] - .05) return go(X.spot - 1, true);
+    X.zT = clamp(nz, S.z[0], S.z[1]); hideHint();
+  }
+  const look = (dy, dp) => { X.yawT = clamp(X.yawT + dy, -lim.yaw, lim.yaw); X.pitchT = clamp(X.pitchT + dp, lim.down, lim.up); };
+  let hinted = false; const hideHint = () => { if (!hinted) { hinted = true; ui.hint.classList.add('gone'); } };
+  function enter() {
+    X.on = true; X.spot = -1; go(0); X.from = -1; X.k = 1;
+    document.documentElement.classList.add('walking'); section.classList.add('exploring');
+    if (window.lenis) window.lenis.stop();
+    ui.exit.focus({ preventScroll: true }); dirty = true;
+  }
+  function leave() {
+    X.on = false; closeThing();
+    document.documentElement.classList.remove('walking'); section.classList.remove('exploring');
+    if (window.lenis) window.lenis.start();
+    ui.btn.focus({ preventScroll: true }); dirty = true;
+  }
+  if (ui.btn) {
+    ui.btn.addEventListener('click', enter); ui.exit.addEventListener('click', leave);
+    ui.fwd.addEventListener('click', () => step(1)); ui.back.addEventListener('click', () => step(-1));
+    ui.spots.forEach((b, i) => b.addEventListener('click', () => go(i, i < X.spot)));
+    ui.info.querySelector('.x').addEventListener('click', closeThing);
+    // drag to look around
+    let drag = null;
+    canvas.addEventListener('pointerdown', e => { if (!X.on) return; drag = { x: e.clientX, y: e.clientY, moved: 0 }; canvas.setPointerCapture(e.pointerId); });
+    canvas.addEventListener('pointermove', e => { if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.x = e.clientX; drag.y = e.clientY; drag.moved += Math.abs(dx) + Math.abs(dy);
+      look(dx * .08, dy * .06); if (drag.moved > 6) hideHint(); });
+    canvas.addEventListener('pointerup', () => { if (drag && drag.moved < 6) closeThing(); drag = null; });
+    canvas.addEventListener('pointercancel', () => { drag = null; });
+    // the wheel walks, the keys walk and look
+    let wheelAcc = 0;
+    section.addEventListener('wheel', e => { if (!X.on) return; e.preventDefault(); wheelAcc += e.deltaY; if (Math.abs(wheelAcc) > 90) { step(Math.sign(wheelAcc)); wheelAcc = 0; } }, { passive: false });
+    addEventListener('keydown', e => {
+      if (!X.on) return;
+      const k = e.key;
+      if (k === 'Escape') { e.preventDefault(); X.open >= 0 ? closeThing() : leave(); }
+      else if (k === 'ArrowUp' || k === 'w' || k === 'W') { e.preventDefault(); step(1); }
+      else if (k === 'ArrowDown' || k === 's' || k === 'S') { e.preventDefault(); step(-1); }
+      else if ((k === 'ArrowLeft' || k === 'a' || k === 'A') && !e.target.closest('#walk-spots')) { e.preventDefault(); look(6, 0); }
+      else if ((k === 'ArrowRight' || k === 'd' || k === 'D') && !e.target.closest('#walk-spots')) { e.preventDefault(); look(-6, 0); }
+      else if (k === ' ' || k === 'PageDown' || k === 'PageUp' || k === 'Home' || k === 'End') e.preventDefault();   // the page stays put while walking
+    });
+  }
+  // the scroll tour fades the button in once the scene has started
+  const btnShow = p => { if (ui.btn) ui.btn.classList.toggle('on', !X.on && p > .03 && p < .985); };
 
   const hots = HOTS.map((_, i) => document.getElementById('hot' + i)), proj = new THREE.Vector3();
-  let lastP = -1;
+  let lastP = -1, lastT = 0;
   function frame(t) {
     requestAnimationFrame(frame);
     const r = section.getBoundingClientRect(); if (r.bottom <= 0 || r.top >= innerHeight) return;
     const span = section.offsetHeight - innerHeight, p = span > 0 ? clamp(-r.top / span) : 0;
+    const dt = Math.min(.05, (t - lastT) / 1000 || .016); lastT = t;
+    const W = canvas.clientWidth, H = canvas.clientHeight;
+    btnShow(p);
+    if (X.on) {
+      // ease towards where the visitor is walking and looking
+      const e = RM ? 1 : 1 - Math.exp(-dt * 7);
+      X.z += (X.zT - X.z) * e; X.yaw += (X.yawT - X.yaw) * e; X.pitch += (X.pitchT - X.pitch) * e;
+      if (X.k < 1) X.k = Math.min(1, (t - X.t0) / 900);   // the walk between spots takes 0.9 s, however fast the screen draws
+      const S = SPOTS[X.spot], q = { z: X.z, yaw: X.yaw, pitch: X.pitch - 1, fov: S.fov };
+      renderer.clear();
+      if (X.from >= 0 && X.k < 1) {                          // the spot you left keeps walking on as it fades out
+        const F = SPOTS[X.from], fwd = X.from < X.spot, kk = ease(X.k);
+        const fq = { z: fwd ? F.z[1] + .5 * kk : F.z[0] - .4 * kk, yaw: 0, pitch: -1, fov: F.fov };
+        const ph = photos[F.photo]; if (ph) { aim(F.photo, fq, t); ph.mat.opacity = 1; renderer.clearDepth(); renderer.render(ph.scene, cam); }
+        q.z += (fwd ? -.35 : .35) * (1 - kk);
+      }
+      const ph = photos[S.photo];
+      if (ph) { aim(S.photo, q, t); ph.mat.opacity = X.from >= 0 && X.k < 1 ? ease(X.k) : 1; renderer.clearDepth(); renderer.render(ph.scene, cam); }
+      // the things you can click, on this spot only
+      thingEls.forEach((b, i) => {
+        const [spot, u, v] = THINGS[i];
+        if (spot !== X.spot || !ph || X.k < .7) { b.classList.remove('vis'); return; }
+        proj.copy(ph.point(u, v)).project(cam);
+        const vis = proj.z < 1 && Math.abs(proj.x) < .96 && Math.abs(proj.y) < .9;
+        b.classList.toggle('vis', vis);
+        if (vis) b.style.transform = `translate(${(proj.x + 1) / 2 * W}px, ${(1 - proj.y) / 2 * H}px)`;
+      });
+      hots.forEach(el => el && (el.style.opacity = 0));
+      return;
+    }
     if (p === lastP && !dirty && RM) return;
     lastP = p; dirty = false;
     // which photos are on screen: one, or two while one fades into the next
@@ -110,7 +257,6 @@ function start() {
       place(name, p, t); ph.mat.opacity = op; renderer.clearDepth(); renderer.render(ph.scene, cam);
     }
     // hotspots: project their point with the camera of their own photo
-    const W = canvas.clientWidth, H = canvas.clientHeight;
     hots.forEach((el, i) => {
       if (!el) return;
       const [name, u, v] = HOTS[i], ph = photos[name], [a, b] = STOPS[i];

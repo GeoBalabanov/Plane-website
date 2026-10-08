@@ -408,3 +408,68 @@ body.at-end .hud,body.at-end .stagebar{opacity:0}
 @media (max-width:720px){.nav .route > span{display:none}}
 @media (prefers-reduced-motion:reduce){.sound.on .eq i{animation:none;height:8px}}
 .checkin[hidden]{display:none}                    /* once boarded the pass must not sit, invisible, over the page */
+
+/* ---------- walk inside the cabin: free look, steps, things to click ---------- */
+.walk-in{position:absolute;right:var(--gutter);bottom:14vh;z-index:6;display:inline-flex;align-items:center;gap:12px;padding:14px 22px 14px 16px;border:0;border-radius:99px;cursor:pointer;
+  color:var(--paper);font:600 15px/1 var(--sans,inherit);letter-spacing:-.01em;background:rgba(12,10,9,.42);-webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 0 0 1px rgba(255,255,255,.14),0 20px 40px -20px rgba(0,0,0,.6);
+  opacity:0;visibility:hidden;transform:translateY(10px);transition:opacity .5s var(--out),transform .5s var(--out),visibility 0s .5s,background-color .3s var(--out)}
+.walk-in.on{opacity:1;visibility:visible;transform:none;transition:opacity .5s var(--out),transform .5s var(--out),visibility 0s}
+.walk-in:hover{background:rgba(12,10,9,.62)}
+.walk-in:focus-visible,.walk-ui button:focus-visible{outline:2px solid var(--flame);outline-offset:3px}
+.walk-in svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.5}
+.walk-in svg .dot{fill:var(--flame);stroke:none}
+.walk-ui{display:none}
+#cabin.exploring .walk-ui{display:block}
+#cabin.exploring h2,#cabin.exploring #cab-copy,#cabin.exploring .tourcard,#cabin.exploring .hot{visibility:hidden!important}
+#cabin.exploring #cabin3d{cursor:grab;touch-action:none}
+#cabin.exploring #cabin3d:active{cursor:grabbing}
+html.walking{overflow:hidden}
+html.walking .cta,html.walking .hud,html.walking .stagebar{opacity:0!important;pointer-events:none!important}
+.walk-ui button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+.walk-things{position:absolute;inset:0;pointer-events:none;z-index:4}
+.xhot{position:absolute;left:0;top:0;width:0;height:0;padding:0;opacity:0;pointer-events:none;transition:opacity .35s var(--out)}
+.xhot.vis{opacity:1;pointer-events:auto}
+.xhot .ring{position:absolute;left:-17px;top:-17px;width:34px;height:34px;border-radius:50%;border:1.5px solid #fff;background:rgba(255,255,255,.14);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);transition:transform .35s var(--out),background-color .35s var(--out)}
+.xhot .ring::before{content:"";position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px;border-radius:50%;background:#fff}
+.xhot .ring::after{content:"";position:absolute;inset:-1.5px;border-radius:50%;border:1.5px solid #fff;animation:ping 2.6s cubic-bezier(.2,.7,.3,1) infinite}
+.xhot .tag{position:absolute;left:26px;top:-12px;white-space:nowrap;font:500 11px/1 var(--mono);letter-spacing:.09em;text-transform:uppercase;color:#fff;
+  padding:6px 9px;border-radius:99px;background:rgba(10,9,8,.5);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);opacity:0;transform:translateX(-6px);transition:opacity .3s var(--out),transform .3s var(--out)}
+.xhot:hover .tag,.xhot:focus-visible .tag,.xhot.on .tag{opacity:1;transform:none}
+.xhot:hover .ring,.xhot:focus-visible .ring{transform:scale(1.15);background:rgba(255,255,255,.3)}
+.xhot.on .ring{border-color:var(--flame);background:rgba(255,90,31,.35)}
+.xhot.on .ring::before{background:var(--flame)}
+@media (hover:none){.xhot .tag{opacity:1;transform:none}}
+.walk-top{position:absolute;left:var(--gutter);top:calc(env(safe-area-inset-top,0px) + 92px);z-index:5;display:grid;gap:8px;color:var(--paper);pointer-events:none}
+.walk-top .label{opacity:.7}
+.walk-exit{position:absolute;right:var(--gutter);top:calc(env(safe-area-inset-top,0px) + 88px);z-index:6;display:inline-flex;align-items:center;gap:10px;padding:11px 14px 11px 18px;border-radius:99px;
+  color:var(--paper)!important;font:500 12px/1 var(--mono)!important;letter-spacing:.08em!important;text-transform:uppercase;background:rgba(12,10,9,.45)!important;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}
+.walk-exit svg,.walk-info .x svg,.walk-step svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.walk-hint{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 104px);z-index:5;transform:translateX(-50%);margin:0;white-space:nowrap;color:var(--paper);opacity:.75;pointer-events:none;transition:opacity .6s var(--out)}
+.walk-hint.gone{opacity:0}
+.walk-nav{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 32px);z-index:6;transform:translateX(-50%);display:flex;align-items:center;gap:4px;padding:6px;border-radius:99px;
+  color:var(--paper);background:rgba(12,10,9,.48);-webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4);box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 0 0 1px rgba(255,255,255,.12),0 20px 40px -20px rgba(0,0,0,.6)}
+.walk-step{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;transition:background-color .25s var(--out)}
+.walk-step:hover{background:rgba(255,255,255,.12)}
+.walk-spots{display:flex;gap:2px}
+.walk-spots button{position:relative;height:44px;padding:0 14px;border-radius:99px;font:500 11.5px/1 var(--mono);letter-spacing:.07em;text-transform:uppercase;white-space:nowrap;opacity:.62;transition:opacity .25s var(--out),background-color .25s var(--out)}
+.walk-spots button:hover{opacity:1;background:rgba(255,255,255,.08)}
+.walk-spots button[aria-current="true"]{opacity:1;background:rgba(255,255,255,.12)}
+.walk-spots button[aria-current="true"]::after{content:"";position:absolute;left:50%;bottom:7px;width:14px;height:2px;margin-left:-7px;border-radius:2px;background:var(--flame)}
+.walk-info{position:absolute;left:var(--gutter);bottom:calc(env(safe-area-inset-bottom,0px) + 110px);z-index:6;width:min(380px,calc(100vw - 2*var(--gutter)));padding:20px 24px 24px;display:grid;gap:14px;justify-items:start;
+  opacity:0;transform:translateY(12px);transition:opacity .4s var(--out),transform .4s var(--out)}
+.walk-info.on{opacity:1;transform:none}
+.walk-info .row{display:flex;justify-content:space-between;align-items:center;width:100%}
+.walk-info .x{display:grid;place-items:center;width:32px;height:32px;margin:-8px -10px -8px 0;border-radius:50%}
+.walk-info .x:hover{background:rgba(255,255,255,.12)}
+@media (max-width:720px){
+  .walk-in{bottom:auto;top:calc(env(safe-area-inset-top,0px) + 76px);padding:11px 16px 11px 12px;font-size:13px}
+  .walk-spots button{padding:0 9px;font-size:10px}
+  .walk-spots button:not([aria-current="true"]){display:none}
+  .walk-exit span{display:none}
+  .walk-exit{padding:11px}
+  .walk-top{top:calc(env(safe-area-inset-top,0px) + 80px)}
+  .walk-hint{white-space:normal;width:calc(100vw - 2*var(--gutter));text-align:center;bottom:calc(env(safe-area-inset-bottom,0px) + 100px)}
+  .walk-info{bottom:calc(env(safe-area-inset-bottom,0px) + 100px)}
+}
+@media (prefers-reduced-motion:reduce){.xhot .ring::after{animation:none}}
