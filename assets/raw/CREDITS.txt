@@ -4,3 +4,7 @@ Take-off scene (CC0, Poly Haven, https://polyhaven.com):
 - assets/sky.webp, assets/sky.hdr: "Kloppenheim 06 (Pure Sky)" HDRI by Greg Zaal
 - assets/runway-*.webp: "Aerial Asphalt 01" texture
 - assets/grass.webp: "Aerial Grass Rock" texture
+
+Cruise scene (public domain, NASA, https://images.nasa.gov):
+- assets/earth.mp4, assets/earth-poster.webp: from "Earth in 4K – Space Station Expedition 67-68 Edition"
+  (jsc2023m000111), 5:52 to 6:20, flipped vertically, cut into a 26 s loop

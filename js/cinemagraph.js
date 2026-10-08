@@ -1,5 +1,5 @@
-/* Living photographs: the sea of cloud in the supersonic scene flows towards the viewer, and the Earth turns slowly
-   under its atmosphere in the cruise scene. Each photo gets a WebGL canvas on top of it that draws the same picture
+/* A living photograph: the sea of cloud in the supersonic scene flows towards the viewer. (The Earth in the cruise
+   scene is real ISS footage, so it needs none of this; this file only starts and pauses that video.) The photo gets a WebGL canvas on top of it that draws the same picture
    (same box, same cover crop, same scroll transform) and moves only the part below the horizon, measured from the photo.
    Movement uses two copies of the flow, half a cycle apart, cross-faded, so it loops without a jump.
    Crossing Mach 1 sends a shock wave through the clouds and fires "concorde:boom" for the sound. */
@@ -23,7 +23,7 @@
         return vp + (p - vp) * mix(1., exp(-ph * .16 * speed), w);
       }
       float depth = clamp((p.y - hz(p.x)) * 2.2, 0., 1.);      // earth: the surface slides sideways, faster near the viewer
-      return p + vec2(ph * .022 * (.35 + depth), 0.) * w;
+      return p + vec2(ph * .075 * (.3 + depth), -ph * .006 * depth) * w;
     }
     vec3 look(vec2 p){ return texture2D(tex, vec2(p.x, 1. - p.y)).rgb; }
     void main(){
@@ -37,7 +37,7 @@
       p += normalize(sv + 1e-5) * ring * .035 / vec2(va, 1.);
       p += (vec2(noise(vec2(time * 31., 0.)), noise(vec2(0., time * 29.))) - .5) * shake * .012;
       float w = smoothstep(.012, .08, p.y - hz(p.x));          // 0 in the sky, 1 on the surface
-      float t = time / (mode < .5 ? 7. : 10.), p1 = fract(t), p2 = fract(t + .5), f = abs(2. * p1 - 1.);
+      float t = time / (mode < .5 ? 7. : 9.) + (mode > .5 ? noise(p * 3.) * .35 : 0.), p1 = fract(t), p2 = fract(t + .5), f = abs(2. * p1 - 1.);
       vec2 wob = (vec2(noise(p * 7. + time * .06), noise(p * 7. - time * .05)) - .5) * .004 * w * (1. - mode);   // billowing
       vec3 c = mix(look(flow(p, p1, w) + wob), look(flow(p, p2, w) + wob), f);
       if (mode > .5) {                                         // earth: the limb breathes, a few stars in the black
@@ -77,7 +77,12 @@
 
   const boomSec = document.getElementById('boom'), cruiseSec = document.getElementById('cruise');
   const clouds = boomSec && living(document.getElementById('boom-photo'), { mode: 0, posY: .5, horizon: [.396, .13, -.028] });
-  const earth = cruiseSec && living(document.getElementById('earth'), { mode: 1, posY: .6, horizon: [.373, .32, .012] });
+  // the Earth video plays only while its scene is on screen, and stays on its first frame for reduced motion
+  const earthVid = document.getElementById('earth');
+  if (earthVid && earthVid.tagName === 'VIDEO') {
+    if (RM) { earthVid.removeAttribute('autoplay'); earthVid.pause(); }
+    else new IntersectionObserver(([e]) => { if (e.isIntersecting) earthVid.play().catch(() => {}); else earthVid.pause(); }).observe(cruiseSec);
+  }
 
   // Mach 1 sits where the readout in site.js passes 1.00: progress .304 of the supersonic scene
   const MACH1 = .304;
@@ -94,7 +99,6 @@
       clouds.U.speed.value = .6 + 1.4 * p;                     // faster as the Mach number climbs
       clouds.render(ms);
     } else if (boomSec) lastP = progress(boomSec);
-    if (earth && onScreen(cruiseSec)) earth.render(ms);
   }
   requestAnimationFrame(frame);
 })();

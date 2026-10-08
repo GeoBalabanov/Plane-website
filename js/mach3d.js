@@ -16,7 +16,7 @@ const lerp = (a, b, t) => a + (b - a) * t;
 function start() {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
-  renderer.outputEncoding = THREE.sRGBEncoding; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = .95;
+  renderer.outputEncoding = THREE.sRGBEncoding; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = .9;
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.VSMShadowMap;
   renderer.setClearColor(0x000000, 0);
 
@@ -30,17 +30,17 @@ function start() {
   const cam = new THREE.PerspectiveCamera(20, 1, 1, 2000); cam.up.set(0, 0, 1);
 
   const sun = new THREE.DirectionalLight(0xfff1e0, 1.25); sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048); sun.shadow.radius = 14; sun.shadow.blurSamples = 20; sun.shadow.bias = -.0004;
+  sun.shadow.mapSize.set(2048, 2048); sun.shadow.radius = 22; sun.shadow.blurSamples = 25; sun.shadow.bias = -.0004;
   Object.assign(sun.shadow.camera, { left: -45, right: 45, top: 45, bottom: -45, near: 1, far: 300 }); sun.shadow.camera.updateProjectionMatrix();
-  scene.add(sun, sun.target, new THREE.HemisphereLight(0xdfe6f0, 0xe9e2d4, .2));
+  scene.add(sun, sun.target, new THREE.HemisphereLight(0xb9cbe4, 0xe9e2d4, .35));
   // the paper: only its shadow shows, the colour is the page behind the canvas
-  const paper = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000).rotateX(-Math.PI / 2), new THREE.ShadowMaterial({ color: 0x3b2c1c, opacity: .2 }));
-  paper.position.y = -14; paper.receiveShadow = true; scene.add(paper);
+  const paper = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000).rotateX(-Math.PI / 2), new THREE.ShadowMaterial({ color: 0x2c2418, opacity: .32 }));
+  paper.position.y = -9; paper.receiveShadow = true; scene.add(paper);
 
   const holder = new THREE.Group(); scene.add(holder);
   new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).load('assets/models/concorde.glb', gltf => {
     gltf.scene.traverse(o => { if (!o.isMesh) return; o.castShadow = true;
-      const m = o.material; if (m.name !== 'Seal') { m.roughness = .26; m.envMapIntensity = 1.15; }
+      const m = o.material; if (m.name !== 'Seal') { m.roughness = .14; m.metalness = .62; m.envMapIntensity = 2.1; }   // polished: the sky shows in the paint
       if (m.map) m.map.anisotropy = renderer.capabilities.getMaxAnisotropy(); });
     const box = new THREE.Box3().setFromObject(gltf.scene), c = box.getCenter(new THREE.Vector3());
     gltf.scene.position.set(-c.x, -c.y, -c.z);               // centre the aircraft on its holder
@@ -63,15 +63,15 @@ function start() {
     const t = RM ? 0 : ms / 1000;
     const rise = ease(seg(p, 0, .45)), grow = ease(seg(p, .5, .95));
     // fly in from below the page, with a slow breath of bank and yaw like a real aircraft in the air
-    holder.position.z = lerp(-95, 0, rise);
+    holder.position.z = lerp(-75, 0, rise);
     holder.rotation.z = Math.sin(t * .6) * .03 + .12 * (1 - rise);
     holder.rotation.y = Math.sin(t * .45) * .012;
     holder.position.y = Math.sin(t * .8) * .25;
     // the camera: high enough to show the whole aircraft between the words, then down until the wing fills the page
     const fit = Math.max(1, .95 / cam.aspect);              // tall screens step back
-    const H = lerp(250, 66, grow) * fit, cz = lerp(-4, 6, grow);
+    const H = lerp(196, 62, grow) * fit, cz = lerp(1.5, 8, grow);   // the whole aircraft fills the page height, then the wing fills its width
     cam.position.set(0, H, cz); cam.lookAt(0, 0, cz);
-    sun.position.set(26, 120, 30); sun.target.position.set(0, 0, 0);     // light from the upper left of the page: the shadow falls to the lower right
+    sun.position.set(-34, 120, 22); sun.target.position.set(0, 0, 0);    // light from the upper right of the page: the shadow falls to the left, as in Figma
     renderer.render(scene, cam);
   }
   requestAnimationFrame(frame);

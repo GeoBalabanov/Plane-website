@@ -199,7 +199,7 @@ body.at-end .hud,body.at-end .stagebar{opacity:0}
 
 /* ---------- 5. Mach 2: the plane rises between the words ---------- */
 #mach2{height:420vh}
-#mach2 .stage{background:radial-gradient(90% 70% at 50% 45%,#f3f0e7 0%,#eeebe0 55%,#e4e0d3 100%);color:var(--ink)}   /* the cream paper of the Figma frames */
+#mach2 .stage{background:#eeebe0;color:var(--ink)}   /* the cream paper of the Figma frames */
 .h-mach{position:absolute;top:41vh;white-space:nowrap;z-index:1}
 #mach3d{z-index:2}
 #flyat{left:var(--gutter)}
@@ -217,6 +217,7 @@ body.at-end .hud,body.at-end .stagebar{opacity:0}
 #cruise{height:320vh}
 #cruise .stage{background:#04060b}
 #cruise .photo{position:absolute;left:-4%;width:108%;height:100%;object-fit:cover;object-position:50% 60%}
+#cruise video.photo{top:30vh;left:0;width:100%;height:72vh;object-position:50% 0;-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 9%);mask-image:linear-gradient(180deg,transparent 0,#000 9%);transform-origin:50% 0}   /* real ISS footage, its limb set low so the type sits in black space */
 #cruise .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(4,6,11,.95) 0%,rgba(4,6,11,.75) 40%,rgba(4,6,11,0) 68%)}
 #cruise .block{position:absolute;left:var(--gutter);top:17vh;display:grid;gap:22px;justify-items:start;max-width:calc(100vw - 2*var(--gutter))}
 #cruise h2{font-variant-numeric:tabular-nums}
