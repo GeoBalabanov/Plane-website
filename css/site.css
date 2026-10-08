@@ -484,3 +484,9 @@ html.walking .cta,html.walking .hud,html.walking .stagebar{opacity:0!important;p
 .walk-in::after{content:"";position:absolute;inset:-1px;border-radius:inherit;border:1.5px solid rgba(255,90,31,.85);opacity:0;animation:walkping 2.4s cubic-bezier(.2,.7,.3,1) infinite}
 @keyframes walkping{0%{opacity:.9;transform:scale(1)}100%{opacity:0;transform:scale(1.25,1.6)}}
 @media (prefers-reduced-motion:reduce){.walk-in::after{animation:none}}
+
+/* at the flight deck the forward button grows into "On to take-off" */
+.walk-step .onward-t{display:none}
+.walk-step.onward{width:auto;gap:8px;padding:0 14px 0 18px;border-radius:99px;background:var(--flame);color:#fff;font:500 11.5px/1 var(--mono);letter-spacing:.07em;text-transform:uppercase;display:inline-flex;align-items:center;height:44px}
+.walk-step.onward .onward-t{display:inline}
+.walk-step.onward:hover{background:#ff7240}

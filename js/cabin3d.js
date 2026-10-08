@@ -170,11 +170,13 @@ function start() {
     X.z = X.zT = z; X.yaw = X.yawT = 0; X.pitch = X.pitchT = 0;
     ui.spots.forEach((b, i) => b.setAttribute('aria-current', i === spot ? 'true' : 'false'));
     ui.name.textContent = SPOTS[spot].name;
+    const last = spot === SPOTS.length - 1;                  // at the flight deck the forward button carries on with the flight
+    ui.fwd.classList.toggle('onward', last); ui.fwd.setAttribute('aria-label', last ? 'On to take-off' : 'Step forward');
   }
   function step(d) {                                         // one step forward (1) or back (-1); past the end of a spot you walk into the next
     const S = SPOTS[X.spot], nz = X.zT + d * .3;
-    if (nz > S.z[1] + .05) return go(X.spot + 1, false);
-    if (nz < S.z[0] - .05) return go(X.spot - 1, true);
+    if (nz > S.z[1] + .05) return X.spot === SPOTS.length - 1 ? onward() : go(X.spot + 1, false);   // past the flight deck: on with the flight
+    if (nz < S.z[0] - .05) return X.spot === 0 ? leave() : go(X.spot - 1, true);                     // back past the aisle: back to the story
     X.zT = clamp(nz, S.z[0], S.z[1]); X.yawT *= .35; X.pitchT *= .35; hideHint();   // you look ahead when you walk
   }
   const look = (dy, dp) => { X.yawT = clamp(X.yawT + dy, -lim.yaw, lim.yaw); X.pitchT = clamp(X.pitchT + dp, lim.down, lim.up); };
@@ -187,15 +189,27 @@ function start() {
     if (window.lenis) window.lenis.stop();
     ui.exit.focus({ preventScroll: true }); dirty = true;
   }
-  function leave() {
+  // walking on from the flight deck: leave the walk and scroll on to the take-off
+  let lockUntil = 0;
+  function onward() {
+    if (performance.now() < lockUntil) return; lockUntil = performance.now() + 1500;
+    leave(false);
+    const next = document.getElementById('droop');
+    // a frame later, once the page scroll has been handed back
+    if (next) requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (window.lenis) window.lenis.scrollTo(next, { duration: RM ? 0 : 1.8, force: true }); else next.scrollIntoView({ behavior: RM ? 'auto' : 'smooth' });
+    }));
+  }
+  function leave(refocus = true) {
     X.on = false; closeThing();
     document.documentElement.classList.remove('walking'); section.classList.remove('exploring');
     if (window.lenis) window.lenis.start();
-    ui.btn.focus({ preventScroll: true }); dirty = true;
+    if (refocus) ui.btn.focus({ preventScroll: true });
+    dirty = true;
   }
   if (ui.btn) {
-    ui.btn.addEventListener('click', () => enter(spotAt(lastP))); ui.exit.addEventListener('click', leave);
-    ui.fwd.addEventListener('click', () => step(1)); ui.back.addEventListener('click', () => step(-1));
+    ui.btn.addEventListener('click', () => enter(spotAt(lastP))); ui.exit.addEventListener('click', () => leave());
+    ui.fwd.addEventListener('click', () => X.spot === SPOTS.length - 1 ? onward() : step(1)); ui.back.addEventListener('click', () => step(-1));
     ui.spots.forEach((b, i) => b.addEventListener('click', () => go(i, i < X.spot)));
     ui.info.querySelector('.x').addEventListener('click', closeThing);
     // drag to look around
