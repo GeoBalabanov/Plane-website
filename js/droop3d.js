@@ -26,16 +26,28 @@ const BASE = 330, TOPS = 400;                              // cloud deck: base a
 /* ---------- shared GLSL: the photographed evening sky ("Evening Road 01", Poly Haven, CC0), used by the dome,
    the haze on the ground and the clouds. Only its upper part is stored, so below the horizon it holds the horizon. ---------- */
 const SKY = `
-  uniform vec3 sunDir; uniform sampler2D tSky; uniform float skyRot, skyGain;
-  vec3 sky(vec3 d){
-    d = normalize(d);
-    float u = atan(d.z, d.x) * .1591549 + .5 + skyRot, v = .5 - asin(clamp(d.y, -1., 1.)) * .3183099;
-    vec3 c = texture2D(tSky, vec2(u, 1. - min(v, .552) / .56)).rgb;
-    return pow(c, vec3(2.2)) * skyGain; }
+  uniform vec3 sunDir; uniform sampler2D tSky; uniform float skyRot, skyGain, skyT;
   float hash(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
   float noise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f);
     return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1)), f.x), f.y); }
-  float fbm(vec2 p){ float v = 0., a = .5; for (int i = 0; i < 5; i++){ v += a * noise(p); p = p * 2.03 + 17.1; a *= .5; } return v; }`;
+  float fbm(vec2 p){ float v = 0., a = .5; for (int i = 0; i < 5; i++){ v += a * noise(p); p = p * 2.03 + 17.1; a *= .5; } return v; }
+  vec3 skyAt(float u, float v){ return texture2D(tSky, vec2(u, 1. - min(v, .552) / .56)).rgb; }
+  vec3 sky(vec3 d){
+    d = normalize(d);
+    // the clouds drift with the wind like a time-lapse, faster overhead than at the horizon, and churn as they go
+    float el = asin(clamp(d.y, -1., 1.)), v = .5 - el * .3183099;
+    float u = atan(d.z, d.x) * .1591549 + .5 + skyRot + skyT * (.0004 + .0007 * smoothstep(0., .9, el));
+    vec3 c0 = skyAt(u, v);
+    float m = smoothstep(-.05, .1, c0.r - c0.b * .95);           // cloud, not blue sky
+    vec2 q = vec2(u * 140., v * 70.);
+    vec2 boil = (vec2(noise(q + skyT * .09), noise(q * 1.3 - skyT * .07)) - .5) * .0016 * m * smoothstep(.0, .25, el);
+    vec3 c = skyAt(u + boil.x, v + boil.y);
+    // richer golden hour: deeper blue overhead, more body in the clouds, warm light on their edges
+    float l = dot(c, vec3(.299, .587, .114));
+    c = mix(c, c * (.75 + .6 * l), .55 * m);
+    c *= mix(vec3(1.), vec3(1.06, 1., .92), m * .4);
+    c *= mix(vec3(1.), vec3(.84, .9, 1.04), smoothstep(.15, .9, el) * (1. - m));   // deeper, bluer overhead
+    return pow(c, vec3(2.2)) * skyGain; }`;
 const VERT = 'varying vec3 w; void main(){ vec4 p = modelMatrix * vec4(position, 1.); w = p.xyz; gl_Position = projectionMatrix * viewMatrix * p; }';
 
 function start() {
@@ -52,7 +64,7 @@ function start() {
   const SKY_ROT = -.2254, sunDir = new THREE.Vector3(-.6 * Math.cos(19 * DEG), Math.sin(19 * DEG), .8 * Math.cos(19 * DEG));
   const tex = (url, srgb) => { const t = new THREE.TextureLoader().load(url, () => { dirty = true; }); t.wrapS = t.wrapT = THREE.RepeatWrapping; if (srgb) t.encoding = THREE.sRGBEncoding; t.anisotropy = renderer.capabilities.getMaxAnisotropy(); return t; };
   const skyTex = tex('assets/sky.webp'); skyTex.wrapT = THREE.ClampToEdgeWrapping; skyTex.generateMipmaps = false; skyTex.minFilter = THREE.LinearFilter;
-  const U = { sunDir: { value: sunDir }, dist: { value: 0 }, time: { value: 0 }, tSky: { value: skyTex }, skyRot: { value: SKY_ROT }, skyGain: { value: .82 } };
+  const U = { sunDir: { value: sunDir }, dist: { value: 0 }, time: { value: 0 }, tSky: { value: skyTex }, skyRot: { value: SKY_ROT }, skyGain: { value: .82 }, skyT: { value: 0 } };
 
   /* ---------- sky dome; the reflections and fill light come from the same sky as a full HDR ---------- */
   const skyMat = new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false, depthTest: false, uniforms: U,
@@ -575,9 +587,9 @@ function start() {
     requestAnimationFrame(frame);
     const r = section.getBoundingClientRect(); if (r.bottom <= 0 || r.top >= innerHeight) return;
     const tick = RM ? 0 : Math.floor(ms / 42);               // new grain about 24 times a second
-    const live = !RM && (S.reheat > .01 || air.uniforms.cloud.value > .01);   // flames and cloud move on their own
+    const live = !RM;                                        // the sky drifts, the grass sways, the flames flicker: always moving
     if (!dirty && !live && tick === lastGrain) return;
-    U.time.value = ms / 1000;
+    U.time.value = ms / 1000; U.skyT.value = RM ? 0 : ms / 1000;
     if (dirty || live) {
       aim(S.deg); sight.material.opacity = .95 * S.sight;
       rig.position.y = S.alt; pitch.rotation.x = -S.pitch * DEG; stow(S.gear);
