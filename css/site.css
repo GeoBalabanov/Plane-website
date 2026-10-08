@@ -170,7 +170,7 @@ body.at-end .hud,body.at-end .stagebar{opacity:0}
 .tourcard .dots i.on{background:var(--flame)}
 
 /* ---------- 3. take-off: the droop nose ---------- */
-#droop{height:420vh}
+#droop{height:760vh}
 #droop .stage{background:#ebe0d0;color:var(--ink)}
 #droop .kicker{position:absolute;left:var(--gutter);top:13vh}
 #droop-l{left:var(--gutter);top:17vh}

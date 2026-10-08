@@ -153,18 +153,23 @@
   tourcards.forEach((c, i) => c.insertAdjacentHTML('beforeend', '<div class="dots" aria-hidden="true">' + tourcards.map((_, j) => `<i${j === i ? ' class="on"' : ''}></i>`).join('') + '</div>'));
   const ticks = [...$('ticks').children];
   // droop nose: the readout card and the fact follow the nose angle
-  function noseReadout(angle) {
+  function noseReadout(angle, air = false) {
+    if (air && angle > 4.9) air = false;                           // just off the runway the nose is still in its take-off position
     $('readout').textContent = angle.toFixed(1) + '°';
     const landing = angle > 9;
-    $('fact-state').textContent = angle < .05 ? 'Nose up' : angle < 4.9 ? 'Nose lowering' : landing ? 'Landing position' : 'Take-off position';
-    const txt = landing
+    $('fact-state').textContent = air ? (angle < .05 ? 'Nose up for the climb' : 'Nose rising')
+      : angle < .05 ? 'Nose up' : angle < 4.9 ? 'Nose lowering' : landing ? 'Landing position' : 'Take-off position';
+    const txt = air
+      ? 'In the air the nose goes back up. For landing it drops to 12.5 degrees, because the delta wing needs a nose-high attitude.'
+      : landing
       ? 'For landing it drops further, to 12.5 degrees. The delta wing needs a nose-high attitude, so the droop lets the pilots see past the long nose.'
       : 'Before take-off the long nose is lowered 5 degrees, so the pilots can see past it.';
     if ($('fact-text').textContent !== txt) $('fact-text').textContent = txt;
     const tick = angle < 2.5 ? 0 : landing ? 2 : 1;
     ticks.forEach((t, i) => t.classList.toggle('on', i === tick));
   }
-  addEventListener('concorde:nose', e => noseReadout(e.detail));
+  // droop3d.js sends { deg, air }: the angle, and whether the aircraft has left the runway
+  addEventListener('concorde:nose', e => typeof e.detail === 'number' ? noseReadout(e.detail) : noseReadout(e.detail.deg, e.detail.air));
   let last = -1, lastP = null, dirty = true;
   function update() {
     const y = scrollY;
@@ -269,8 +274,10 @@
     if (k[5] > 0) { alt = lerp(60000, 0, k[5]); mach = lerp(2, 0, k[5]); }
     const k2 = [P.boarding, P.cabin, P.droop, P.boom, P.mach2, P.cruise, P.arrival];
     const total = k2.reduce((s, v) => s + v, 0) / 7;
-    $('hud-alt').textContent = (Math.round(alt / 100) * 100).toLocaleString('en-GB') + ' ft';
-    $('hud-mach').textContent = mach.toFixed(2);
+    if (!(window.noseDriven && k[1] > 0 && k[1] < 1)) {            // during the take-off droop3d.js writes these itself
+      $('hud-alt').textContent = (Math.round(alt / 100) * 100).toLocaleString('en-GB') + ' ft';
+      $('hud-mach').textContent = mach.toFixed(2);
+    }
     $('hud-time').textContent = fmtTime(total * 210);
     let idx = k2.findIndex(v => v < 1); if (idx === -1) idx = 6;
     const names = ['Boarding','Cabin','Take-off','Supersonic','Mach 2','Cruise','Arrival'];
