@@ -33,7 +33,7 @@
       else p.x = .5 * (1. - va / imgAspect) + p.x * va / imgAspect;
       // shock wave: a ring of bent light opening from the centre of the view
       vec2 sv = (vUv - .5) * vec2(va, 1.); float r = length(sv);
-      float R = shock * 1.6, ring = shock > 0. ? exp(-pow((r - R) * 14., 2.)) * (1. - shock) : 0.;
+      float R = shock * 1.6, rr = (r - R) * 14., ring = shock > 0. ? exp(-rr * rr) * (1. - shock) : 0.;
       p += normalize(sv + 1e-5) * ring * .035 / vec2(va, 1.);
       p += (vec2(noise(vec2(time * 31., 0.)), noise(vec2(0., time * 29.))) - .5) * shake * .012;
       float w = smoothstep(.012, .08, p.y - hz(p.x));          // 0 in the sky, 1 on the surface
@@ -41,10 +41,10 @@
       vec2 wob = (vec2(noise(p * 7. + time * .06), noise(p * 7. - time * .05)) - .5) * .004 * w * (1. - mode);   // billowing
       vec3 c = mix(look(flow(p, p1, w) + wob), look(flow(p, p2, w) + wob), f);
       if (mode > .5) {                                         // earth: the limb breathes, a few stars in the black
-        float limb = exp(-pow((p.y - hz(p.x) + .004) * 90., 2.));
+        float lb = (p.y - hz(p.x) + .004) * 90., limb = exp(-lb * lb);
         c += vec3(.15, .35, .9) * limb * (.05 + .04 * sin(time * .7)) ;
         vec2 q = p * vec2(140., 95.), g = floor(q), o = vec2(hash(g + 7.), hash(g + 13.)) * .6 + .2;   // one point of light at a random spot in a few cells
-        float s = step(.993, hash(g)) * smoothstep(.09, .0, length((fract(q) - o) * vec2(view.x / view.y, 1.) * 1.2)) * (1. - smoothstep(-.14, -.05, p.y - hz(p.x)));
+        float s = step(.993, hash(g)) * (1. - smoothstep(0., .09, length((fract(q) - o) * vec2(view.x / view.y, 1.) * 1.2))) * (1. - smoothstep(-.14, -.05, p.y - hz(p.x)));
         c += vec3(.85, .9, 1.) * s * (.3 + .25 * sin(time * (1.2 + hash(g + 3.) * 2.) + hash(g) * 30.));
       }
       c += ring * .35 + shock * (1. - shock) * .25;            // the flash of the wave

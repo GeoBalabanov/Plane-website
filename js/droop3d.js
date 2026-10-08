@@ -23,7 +23,7 @@ const DEG = Math.PI / 180, STAND = 2.77;                   // height of the mode
 const MAIN_Z = -2.7;                                       // main bogies along the aircraft: the aircraft rotates about them
 const BASE = 330, TOPS = 400;                              // cloud deck: base and tops, in metres above the runway
 
-/* ---------- shared GLSL: the photographed evening sky ("Kloppenheim 06", Poly Haven, CC0), used by the dome,
+/* ---------- shared GLSL: the photographed evening sky ("Evening Road 01", Poly Haven, CC0), used by the dome,
    the haze on the ground and the clouds. Only its upper part is stored, so below the horizon it holds the horizon. ---------- */
 const SKY = `
   uniform vec3 sunDir; uniform sampler2D tSky; uniform float skyRot, skyGain;
@@ -48,8 +48,8 @@ function start() {
 
   const scene = new THREE.Scene();
   const cam = new THREE.PerspectiveCamera(26, 1, .5, 40000);
-  // the photo's sun stands 12.6 degrees up; the sky is turned so it sits ahead and to the left, lighting the side the camera sees
-  const SKY_ROT = -.2704, sunDir = new THREE.Vector3(-.6 * Math.cos(12.6 * DEG), Math.sin(12.6 * DEG), .8 * Math.cos(12.6 * DEG));
+  // the photo's sun stands 19 degrees up; the sky is turned so it sits ahead and to the left, lighting the side the camera sees
+  const SKY_ROT = -.2254, sunDir = new THREE.Vector3(-.6 * Math.cos(19 * DEG), Math.sin(19 * DEG), .8 * Math.cos(19 * DEG));
   const tex = (url, srgb) => { const t = new THREE.TextureLoader().load(url, () => { dirty = true; }); t.wrapS = t.wrapT = THREE.RepeatWrapping; if (srgb) t.encoding = THREE.sRGBEncoding; t.anisotropy = renderer.capabilities.getMaxAnisotropy(); return t; };
   const skyTex = tex('assets/sky.webp'); skyTex.wrapT = THREE.ClampToEdgeWrapping; skyTex.generateMipmaps = false; skyTex.minFilter = THREE.LinearFilter;
   const U = { sunDir: { value: sunDir }, dist: { value: 0 }, time: { value: 0 }, tSky: { value: skyTex }, skyRot: { value: SKY_ROT }, skyGain: { value: .82 } };
@@ -92,7 +92,7 @@ function start() {
         float h = hash(cell), edge = min(min(fc.x, 1. - fc.x) * 420., min(fc.y, 1. - fc.y) * 300.);
         vec3 field = grass * (h < .3 ? vec3(1.35, 1.05, .7) : h < .55 ? vec3(.7, .85, .6) : h < .8 ? vec3(1.1, 1., .75) : vec3(.9, .75, .6));
         field = mix(field * .5, field, smoothstep(3., 14., edge));
-        float airfield = smoothstep(560., 480., ax) * smoothstep(-1300., -1100., z) * smoothstep(5300., 5100., z);
+        float airfield = (1. - smoothstep(480., 560., ax)) * smoothstep(-1300., -1100., z) * (1. - smoothstep(5100., 5300., z));
         vec3 col = mix(field, grass * vec3(.78, .86, .62), airfield);   // under the blades: the shade inside thick grass
         // paved: runway (45 m) with shoulders, a parallel taxiway and four links between them
         float run = band(z, -300., 3900.) * band(ax, -1., 22.5), shoulder = band(z, -300., 3900.) * band(ax, 22.5, 30.);
@@ -382,7 +382,7 @@ function start() {
   const flameMat = (len, core) => new THREE.ShaderMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
     uniforms: flameU,
     vertexShader: `varying float along, rim, ang; void main(){
-        along = -position.z / ${len.toFixed(2)}; ang = atan(position.y, position.x);
+        along = clamp(-position.z / ${len.toFixed(2)}, 0., 1.); ang = atan(position.y, position.x);
         vec3 n = normalize(normalMatrix * normal); vec4 mv = modelViewMatrix * vec4(position, 1.);
         rim = abs(dot(n, normalize(-mv.xyz))); gl_Position = projectionMatrix * mv; }`,
     fragmentShader: `uniform float time, power; varying float along, rim, ang;
@@ -392,17 +392,17 @@ function start() {
       void main(){
         // turbulence flowing out of the nozzle
         float tb = n2(vec2(along * 9. - time * 38., ang * 2.2)) * .6 + n2(vec2(along * 23. - time * 61., ang * 4.)) * .4;
-        float body = pow(rim, ${core ? '1.2' : '2.4'}) * pow(1. - along, ${core ? '2.2' : '1.3'});
+        float al = clamp(along, 0., 1.), body = pow(clamp(rim, 0., 1.), ${core ? '1.2' : '2.4'}) * pow(1. - al, ${core ? '2.2' : '1.3'});
         ${core ? `
         vec3 c = mix(vec3(1., .86, .62) * 2.6, vec3(1., .55, .2) * 1.7, smoothstep(0., 1., along));
         float a = body * (.8 + .25 * tb);` : `
         // shock diamonds: four bright cells that shrink and fade down the plume
-        float cells = 0.; for (int i = 1; i <= 4; i++){ float c0 = float(i) * .17; cells += exp(-pow((along - c0) * 32., 2.)) * (1.15 - float(i) * .2); }
+        float cells = 0.; for (int i = 1; i <= 4; i++){ float c0 = float(i) * .17; float e = (along - c0) * 32.; cells += exp(-e * e) * (1.15 - float(i) * .2); }
         vec3 c = mix(vec3(1., .5, .17) * 1.9, vec3(.9, .22, .05) * 1.1, smoothstep(.05, .9, along));
-        c += vec3(1., .72, .42) * cells * 2.8 * pow(rim, 3.);
-        float a = body * (.55 + .7 * tb) * smoothstep(1., .55, along + tb * .25);`}
+        c += vec3(1., .72, .42) * cells * 2.8 * pow(clamp(rim, 0., 1.), 3.);
+        float a = body * (.55 + .7 * tb) * (1. - smoothstep(.55, 1., along + tb * .25));`}
         float flick = .88 + .12 * sin(time * 53. + along * 17.) * sin(time * 37.);
-        gl_FragColor = vec4(c * a * flick * power, 1.); }` });
+        vec3 o = c * a * flick * power; gl_FragColor = vec4(o == o ? max(o, 0.) : vec3(0.), 1.); }` });   // never negative, never NaN: either would draw black
   const plumeMat = flameMat(7, false), coreMat = flameMat(2.4, true);
   const plumeGeo = new THREE.CylinderGeometry(.62, .12, 7, 32, 48, true).rotateX(Math.PI / 2).translate(0, 0, -3.5);
   const coreGeo = new THREE.CylinderGeometry(.42, .04, 2.4, 24, 16, true).rotateX(Math.PI / 2).translate(0, 0, -1.2);
@@ -471,7 +471,7 @@ function start() {
         if (haze > 0.) {                                      // heat haze: the air behind the nozzles wobbles
           vec2 ab = (hazeB - hazeA) * vec2(aspect, 1.), ap = (uv - hazeA) * vec2(aspect, 1.);
           float t = clamp(dot(ap, ab) / max(dot(ab, ab), 1e-6), 0., 1.), dd = length(ap - ab * t);
-          float m = smoothstep(hazeR * (.6 + t * 1.6), 0., dd) * (1. - t) * smoothstep(0., .04, t) * haze;
+          float m = (1. - smoothstep(0., hazeR * (.6 + t * 1.6), dd)) * (1. - t) * smoothstep(0., .04, t) * haze;
           vec2 q = uv * vec2(aspect, 1.) * 55.;
           uv += (vec2(noise(q + vec2(time * 7., -time * 19.)), noise(q * 1.3 - vec2(time * 11., time * 23.))) - .5) * .009 * m;
         }
@@ -607,7 +607,10 @@ function start() {
         air.uniforms.hazeA.value.set(pa.x * .5 + .5, pa.y * .5 + .5); air.uniforms.hazeB.value.set(pb.x * .5 + .5, pb.y * .5 + .5);
         air.uniforms.aspect.value = cam.aspect;
         air.uniforms.hazeR.value = Math.max(.02, Math.hypot((ps.x - pa.x) * .5 * cam.aspect, (ps.y - pa.y) * .5));
-        air.uniforms.haze.value = RM || pa.z > 1 ? 0 : S.reheat; }
+        // only where the hot air is seen against what lies behind it: from the front the aircraft itself is in the way
+        const back = b3.clone().sub(a3).normalize(), toCam = cam.position.clone().sub(a3).normalize();
+        const seen = THREE.MathUtils.smoothstep(back.dot(toCam), -.35, .1);
+        air.uniforms.haze.value = RM || pa.z > 1 ? 0 : S.reheat * seen; }
       // inside the cloud deck the picture goes white
       const y = cam.position.y, inside = THREE.MathUtils.smoothstep(y, BASE - 6, BASE + 14) * (1 - THREE.MathUtils.smoothstep(y, TOPS - 10, TOPS + 8));
       air.uniforms.cloud.value = inside;

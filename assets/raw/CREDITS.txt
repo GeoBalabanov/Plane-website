@@ -1,7 +1,7 @@
 "Concorde" by manilov.ap on Sketchfab, licensed under CC Attribution.
 
 Take-off scene (CC0, Poly Haven, https://polyhaven.com):
-- assets/sky.webp, assets/sky.hdr: "Kloppenheim 06 (Pure Sky)" HDRI by Greg Zaal
+- assets/sky.webp, assets/sky.hdr: "Evening Road 01 (Pure Sky)" HDRI, Poly Haven
 - assets/runway-*.webp: "Aerial Asphalt 01" texture
 - assets/grass.webp: "Aerial Grass Rock" texture
 
