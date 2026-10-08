@@ -123,7 +123,7 @@
   <!-- 2. Cabin tour -->
   <section class="scene" id="cabin" data-name="Cabin">
     <div class="stage">
-      <canvas class="gl" id="cabin3d" role="img" aria-label="A 3D walk down Concorde's cabin: two seats on each side of the aisle, tiny windows, overhead bins and a speed display on the front wall"></canvas>
+      <canvas class="gl" id="cabin3d" role="img" aria-label="A walk through the real cabin of British Airways Concorde G-BOAA, from photographs: down the aisle of grey leather seats, past the small windows and the low ceiling, to the Mach display on the front wall and through the door onto the flight deck"></canvas>
       <div class="hot" id="hot0"><span class="ring"></span><span class="tag">Seats</span></div>
       <div class="hot left" id="hot1"><span class="ring"></span><span class="tag">Window</span></div>
       <div class="hot" id="hot2"><span class="ring"></span><span class="tag">Ceiling</span></div>
@@ -268,7 +268,7 @@
       </div>
       <span></span>
       <div class="credits label">
-        <div class="l"><span class="rule"></span><p><span>Concorde: A Transatlantic Journey</span><span>Human Centered Design student project</span><span>3D model: <a href="https://sketchfab.com/3d-models/concorde-6d95290363474798a429a38bbf9ad49d">"Concorde"</a> by <a href="https://sketchfab.com/manilov.ap">manilov.ap</a> on Sketchfab, <a href="https://creativecommons.org/licenses/by/4.0/">CC Attribution</a>, nose split for this site</span><span>Sky, asphalt and grass: <a href="https://polyhaven.com">Poly Haven</a> (CC0)</span><span>Earth footage: NASA, International Space Station, Expedition 67/68 (public domain)</span></p></div>
+        <div class="l"><span class="rule"></span><p><span>Concorde: A Transatlantic Journey</span><span>Human Centered Design student project</span><span>3D model: <a href="https://sketchfab.com/3d-models/concorde-6d95290363474798a429a38bbf9ad49d">"Concorde"</a> by <a href="https://sketchfab.com/manilov.ap">manilov.ap</a> on Sketchfab, <a href="https://creativecommons.org/licenses/by/4.0/">CC Attribution</a>, nose split for this site</span><span>Sky, asphalt and grass: <a href="https://polyhaven.com">Poly Haven</a> (CC0)</span><span>Cabin and flight deck photos of Concorde G-BOAA: BenTanXiaoMing (<a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>) and Alan Wilson (<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC BY-SA 2.0</a>), Wikimedia Commons; depth added for this site, shared under the same licences</span><span>Earth footage: NASA, International Space Station, Expedition 67/68 (public domain)</span></p></div>
         <div class="r"><span class="hair"></span><span>Images are AI-generated illustrations, not photographs of the real aircraft</span></div>
       </div>
     </section>
@@ -276,7 +276,6 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
-<script src="js/concorde3d.js"></script>
 <script src="js/globe3d.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
@@ -289,5 +288,6 @@
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.149.0/examples/jsm/"}}</script>
 <script type="module" src="js/droop3d.js"></script>
 <script type="module" src="js/mach3d.js"></script>
+<script type="module" src="js/cabin3d.js"></script>
 </body>
 </html>

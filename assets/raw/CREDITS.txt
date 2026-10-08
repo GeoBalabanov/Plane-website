@@ -8,3 +8,10 @@ Take-off scene (CC0, Poly Haven, https://polyhaven.com):
 Cruise scene (public domain, NASA, https://images.nasa.gov):
 - assets/earth.mp4, assets/earth-poster.webp: from "Earth in 4K – Space Station Expedition 67-68 Edition"
   (jsc2023m000111), 5:52 to 6:20, flipped vertically, cut into a 26 s loop
+
+Cabin tour (Wikimedia Commons; adapted: resized, depth maps estimated with Depth Anything V2 Small, Apache-2.0):
+- assets/cabin/aisle.webp: "British Airways Concorde G-BOAA Interior 2" by BenTanXiaoMing, CC BY-SA 4.0
+- assets/cabin/cabin.webp: "British Airways Concorde G-BOAA Interior 1" by BenTanXiaoMing, CC BY-SA 4.0
+- assets/cabin/mach.webp: "British Airways Concorde G-BOAA Interior 3" by BenTanXiaoMing, CC BY-SA 4.0
+- assets/cabin/deck.webp: "Cockpit of Concorde 102 'G-BOAA'" by Alan Wilson, CC BY-SA 2.0
+- the matching *-depth.png maps are derived from these photos and shared under the same licences

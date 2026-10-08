@@ -1,5 +1,5 @@
 /* Concorde: the scroll engine. Every .scene is a tall track with a sticky stage; its scroll progress (0..1)
-   scrubs the motion. The 3D scenes live in concorde3d.js and globe3d.js and are driven from the same progress values. */
+   scrubs the motion. The 3D scenes live in their own modules (cabin3d, droop3d, mach3d, globe3d) and read the scroll themselves. */
 (() => {
   const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const root = document.documentElement;
@@ -215,7 +215,7 @@
       const k = (RM || innerWidth <= 720) ? 0 : 1 - ease(seg(p, .02, .2));
       wordmark.style.transform = k ? `translateY(${k * (vh * .5 - 40)}px) scale(${1 + k * .55})` : '';
     }
-    // ---- 2 cabin tour (the 3D camera and hotspots are driven in concorde3d.js)
+    // ---- 2 cabin tour (the camera and hotspots are driven in cabin3d.js)
     { const p = P.cabin;
       const STOPS = [[.04,.16],[.19,.31],[.34,.46],[.50,.64],[.84,.99]];
       const w = ([a, b]) => seg(p, a - .03, a) * (1 - seg(p, b, b + .03));
@@ -295,12 +295,11 @@
     if (viewOn && !RM) drawView(t);
     const G = window.G3D;
     if (G && lastP && (dirty || G.dirty || G.animating())) G.update(lastP, t);
-    if (window.C3D && lastP && (dirty || C3D.animating())) C3D.update(lastP, t);
     dirty = false;
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
-  addEventListener('resize', () => { last = -1; if (window.C3D) C3D.resize(); });   // globe3d.js listens for resize itself
+  addEventListener('resize', () => { last = -1; });
   update();
   drawView(0);
 })();
