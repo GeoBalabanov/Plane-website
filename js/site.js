@@ -151,6 +151,10 @@
   }
 
   const wordmark = $('wordmark');
+  // cabin tour cards: a five-step progress row under each
+  const tourcards = [...document.querySelectorAll('#cabin .tourcard')];
+  tourcards.forEach((c, i) => c.insertAdjacentHTML('beforeend', '<div class="dots" aria-hidden="true">' + tourcards.map((_, j) => `<i${j === i ? ' class="on"' : ''}></i>`).join('') + '</div>'));
+  const ticks = [...$('ticks').children];
   let last = -1, lastP = null, dirty = true;
   function update() {
     const y = scrollY;
@@ -197,25 +201,30 @@
       wordmark.style.transform = k ? `translateY(${k * (vh * .5 - 40)}px) scale(${1 + k * .55})` : '';
       wordmark.style.color = k ? `color-mix(in srgb, var(--ink) ${Math.round(k * 78)}%, var(--chrome-top))` : '';
     }
-    // ---- 1b cabin tour (the 3D camera and hotspots are driven in concorde3d.js)
+    // ---- 2 cabin tour (the 3D camera and hotspots are driven in concorde3d.js)
     { const p = P.cabin;
       const STOPS = [[.04,.16],[.19,.31],[.34,.46],[.50,.64],[.84,.99]];
       const w = ([a, b]) => seg(p, a - .03, a) * (1 - seg(p, b, b + .03));
-      $('cab-intro').style.opacity = 1 - seg(p, .015, .05);
-      document.querySelectorAll('#cabin .tourcard').forEach((c, i) => {
-        const o = w(STOPS[i]); c.style.opacity = o; c.style.transform = `translateY(${(1 - o) * 16}px)`;
+      const away = ease(seg(p, .008, .05));
+      set($('cab-l'), `translateX(${-away * 30}vw)`, 1 - away);
+      set($('cab-r'), `translateX(${away * 30}vw)`, 1 - away);
+      $('cab-copy').style.opacity = 1 - seg(p, .008, .035);
+      tourcards.forEach((c, i) => {
+        const o = w(STOPS[i]); c.style.opacity = o; c.style.transform = `translateY(${(1 - o) * 16}px)`; c.style.visibility = o > 0 ? 'visible' : 'hidden';
       });
     }
-    // ---- 2 droop
+    // ---- 3 droop
     { const p = P.droop;
       const angle = p < .42 ? lerp(0, 5, ease(seg(p, .1, .36))) : lerp(5, 12.5, ease(seg(p, .62, .88)));
       $('readout').textContent = angle.toFixed(1) + '°';
       const landing = angle > 9;
-      $('fact-state').textContent = angle < 4.9 ? 'Nose lowering' : landing ? 'Landing position' : 'Take-off position';
+      $('fact-state').textContent = angle < .05 ? 'Nose up' : angle < 4.9 ? 'Nose lowering' : landing ? 'Landing position' : 'Take-off position';
       const txt = landing
         ? 'For landing it drops further, to 12.5 degrees. The delta wing needs a nose-high attitude, so the droop lets the pilots see past the long nose.'
         : 'Before take-off the long nose is lowered 5 degrees, so the pilots can see past it.';
       if ($('fact-text').textContent !== txt) $('fact-text').textContent = txt;
+      const tick = angle < 2.5 ? 0 : landing ? 2 : 1;
+      ticks.forEach((t, i) => t.classList.toggle('on', i === tick));
     }
     // ---- 3 boom
     { const p = P.boom;

@@ -149,43 +149,45 @@ body.at-end .hud,body.at-end .stagebar{opacity:0}
 /* ---- scenes below still carry the previous styling; each is rebuilt in turn ---- */
 :root{--mocha:#2b231f;--pearl:#eeebe0;--graphite:#55504a}
 .wide{font-stretch:125%}
-/* 1b. cabin tour */
+/* ---------- 2. cabin tour ---------- */
 #cabin{height:640vh}
-#cabin .stage{background:#0b0a09}
-.gl{position:absolute;inset:0;width:100%;height:100%;display:block}
+#cabin .stage{background:var(--ink)}
 .hot{position:absolute;left:0;top:0;width:0;height:0;opacity:0;pointer-events:none;will-change:transform,opacity}
 .hot .ring{position:absolute;left:-15px;top:-15px;width:30px;height:30px;border-radius:50%;border:1.5px solid #fff;background:rgba(255,255,255,.16);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
 .hot .ring::after{content:"";position:absolute;inset:-1.5px;border-radius:50%;border:1.5px solid #fff;animation:ping 2.2s cubic-bezier(.2,.7,.3,1) infinite}
-.hot .tag{position:absolute;left:24px;top:-12px;white-space:nowrap;font:500 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:#fff;
-  padding:6px 10px;border-radius:999px;background:rgba(10,10,10,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.hot .tag{position:absolute;left:24px;top:-13px;white-space:nowrap;font:500 11px/1 var(--mono);letter-spacing:.09em;text-transform:uppercase;color:#fff;
+  padding:8px 12px;border-radius:999px;background:rgba(10,9,8,.5);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
 .hot.left .tag{left:auto;right:24px}
 @keyframes ping{0%{transform:scale(1);opacity:.9}100%{transform:scale(2.4);opacity:0}}
-#cabin .shade-b{position:absolute;inset:0;background:linear-gradient(180deg,rgba(11,10,9,.55) 0%,rgba(11,10,9,0) 26%,rgba(11,10,9,0) 55%,rgba(11,10,9,.8) 100%);pointer-events:none}
-#cabin .intro-title{position:absolute;left:var(--gutter);top:16vh;display:grid;gap:12px;max-width:min(760px,90vw)}
-#cabin .intro-title h2{margin:0;font-weight:500;font-stretch:125%;letter-spacing:-.04em;line-height:.9;font-size:clamp(46px,8vw,132px)}
-.tourcard{position:absolute;left:var(--gutter);bottom:13vh;width:min(400px,calc(100vw - 2*var(--gutter)));padding:20px 22px;border-radius:20px;opacity:0;
-  background:rgba(14,13,12,.58);-webkit-backdrop-filter:blur(18px) saturate(1.2);backdrop-filter:blur(18px) saturate(1.2);border:1px solid rgba(255,255,255,.14);display:grid;gap:10px}
-.tourcard .row{display:flex;justify-content:space-between;gap:12px;color:var(--mist)}
-.tourcard h3{margin:0;font-weight:500;font-stretch:125%;letter-spacing:-.03em;font-size:clamp(24px,2.2vw,32px);line-height:1}
-.tourcard p{margin:0;font-size:15px;line-height:1.5;color:rgba(244,241,234,.86)}
-.tourcard .dots{display:flex;gap:6px}
-.tourcard .dots i{width:18px;height:2px;background:rgba(244,241,234,.25)}
+#cabin .shade-b{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,9,8,.6) 0%,rgba(10,9,8,0) 26%,rgba(10,9,8,0) 52%,rgba(10,9,8,.82) 100%);pointer-events:none}
+.h-pair{position:absolute;white-space:nowrap}
+#cab-l{left:var(--gutter);top:17vh}
+#cab-r{right:var(--gutter);top:50vh}
+#cab-copy{position:absolute;left:var(--gutter);bottom:14vh;display:grid;gap:22px;justify-items:start}
+.tourcard{position:absolute;left:var(--gutter);bottom:14vh;width:min(400px,calc(100vw - 2*var(--gutter)));padding:22px 26px 24px;display:grid;gap:16px;justify-items:start;opacity:0}
+.tourcard .row{display:flex;justify-content:space-between;gap:12px;width:100%}
+.tourcard .dots{display:flex;gap:6px;margin-top:4px}
+.tourcard .dots i{width:20px;height:2px;border-radius:2px;background:rgba(246,241,231,.24)}
 .tourcard .dots i.on{background:var(--flame)}
 
-/* 2. droop */
+/* ---------- 3. take-off: the droop nose ---------- */
 #droop{height:420vh}
-#droop .stage{background:linear-gradient(180deg,#f4f0e9 0%,#ece6dd 52%,#e4ded4 100%);color:#141210}
-#droop .shade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(244,240,233,.7) 0%,rgba(244,240,233,0) 30%,rgba(244,240,233,0) 70%,rgba(228,222,212,.6) 100%)}
-#droop .head{position:absolute;left:var(--gutter);top:13vh;max-width:min(860px,92vw)}
-#droop h2{margin:10px 0 0;font-weight:500;font-stretch:125%;letter-spacing:-.035em;line-height:.92;font-size:clamp(40px,7.2vw,118px)}
-.nosepanel{position:absolute;right:var(--gutter);bottom:12vh;width:min(440px,calc(100vw - 2*var(--gutter)));padding:20px 22px 18px;display:grid;gap:12px}
-.nosepanel .top{display:flex;justify-content:space-between;align-items:baseline;gap:16px}
-.readout{font-size:clamp(44px,4.6vw,64px);font-weight:500;font-stretch:125%;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums}
-.ticks{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--graphite)}
-.ticks b{font-weight:500;color:#141210}
-.factbox{position:absolute;left:var(--gutter);bottom:12vh;width:min(380px,calc(100vw - 2*var(--gutter)));padding:20px 22px;display:grid;gap:8px}
-.factbox p{margin:0}
-.factbox .state{color:#b43e10}
+#droop .stage{background:linear-gradient(180deg,#f4f0e9 0%,#ece6dd 52%,#e4ded4 100%);color:var(--ink)}
+#droop .shade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(244,240,233,.72) 0%,rgba(244,240,233,0) 32%,rgba(244,240,233,0) 70%,rgba(228,222,212,.6) 100%)}
+#droop .kicker{position:absolute;left:var(--gutter);top:13vh}
+#droop-l{left:var(--gutter);top:17vh}
+#droop-r{right:var(--gutter);top:17vh}
+.factbox{position:absolute;left:var(--gutter);bottom:14vh;width:min(380px,calc(100vw - 2*var(--gutter)));padding:22px 26px 24px;display:grid;gap:14px;justify-items:start}
+.factbox .state{display:flex;align-items:center;gap:8px}
+.pip{width:6px;height:6px;border-radius:50%;background:var(--flame)}
+.nosepanel{position:absolute;right:var(--gutter);bottom:14vh;width:min(420px,calc(100vw - 2*var(--gutter)));padding:22px 26px 22px;display:grid;gap:16px}
+.nosepanel .top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px}
+.readout{font-size:clamp(46px,4.8vw,70px);font-weight:300;font-stretch:125%;letter-spacing:-.055em;line-height:.82;font-variant-numeric:tabular-nums}
+.ticks{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.ticks span{display:grid;gap:3px;color:var(--stone);transition:color .4s var(--out)}
+.ticks b{font-weight:500}
+.ticks span.on{color:var(--ink)}
+.on-light .hair{opacity:.2}
 
 /* 3. clouds */
 #boom{height:330vh}

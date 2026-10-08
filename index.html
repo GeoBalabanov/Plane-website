@@ -77,7 +77,7 @@
     </div>
   </section>
 
-  <!-- 1b. Cabin tour -->
+  <!-- 2. Cabin tour -->
   <section class="scene" id="cabin" data-name="Cabin">
     <div class="stage">
       <canvas class="gl" id="cabin3d" role="img" aria-label="A 3D walk down Concorde's cabin: two seats on each side of the aisle, tiny windows, overhead bins and a speed display on the front wall"></canvas>
@@ -87,35 +87,42 @@
       <div class="hot" id="hot3"><span class="ring"></span><span class="tag">Speed display</span></div>
       <div class="hot" id="hot4"><span class="ring"></span><span class="tag">Flight deck</span></div>
       <div class="shade-b"></div>
-      <div class="intro-title will" id="cab-intro">
-        <span class="label">Cabin tour</span>
-        <h2>Step inside</h2>
-        <p class="copy" style="margin:0;color:var(--mist)">A short walk through the cabin before take-off. Scroll to move down the aisle.</p>
+      <h2 aria-label="Step inside">
+        <span class="h-pair d1 will" id="cab-l" aria-hidden="true" data-reveal>Step</span>
+        <span class="h-pair d1 will" id="cab-r" aria-hidden="true" data-reveal>inside</span>
+      </h2>
+      <div class="will" id="cab-copy">
+        <span class="label rise" style="--d:300">Cabin tour</span>
+        <span class="rule rise" style="--d:400"></span>
+        <p class="copy rise" style="--d:500">A short walk through the cabin before take-off. Scroll to move down the aisle.</p>
       </div>
-      <article class="tourcard"><div class="row label"><span>Cabin tour</span><span>1 / 5</span></div><h3>Four across</h3><p>Two seats, the aisle, two seats. Room for about 100 passengers, and every seat is next to a window or the aisle.</p></article>
-      <article class="tourcard"><div class="row label"><span>Cabin tour</span><span>2 / 5</span></div><h3>Small for a reason</h3><p>The windows are tiny because of the pressure difference at about 60,000 ft.</p></article>
-      <article class="tourcard"><div class="row label"><span>Cabin tour</span><span>3 / 5</span></div><h3>Built narrow</h3><p>The cabin is narrow and the ceiling is low. The whole aircraft is shaped to slip through the air at Mach 2.</p></article>
-      <article class="tourcard"><div class="row label"><span>Cabin tour</span><span>4 / 5</span></div><h3>Your speed on the wall</h3><p>A display at the front shows the speed in Mach. On this flight it will pass 2.00.</p></article>
-      <article class="tourcard"><div class="row label"><span>Cabin tour</span><span>5 / 5</span></div><h3>Three crew up front</h3><p>Captain, first officer and flight engineer. The engineer faces a whole wall of dials on the right.</p></article>
+      <article class="tourcard glass dark"><div class="row label"><span class="muted">Cabin tour</span><span>1 / 5</span></div><h3 class="sub">Four across</h3><span class="rule"></span><p class="copy">Two seats, the aisle, two seats. Room for about 100 passengers, and every seat is next to a window or the aisle.</p></article>
+      <article class="tourcard glass dark"><div class="row label"><span class="muted">Cabin tour</span><span>2 / 5</span></div><h3 class="sub">Small for a reason</h3><span class="rule"></span><p class="copy">The windows are tiny because of the pressure difference at about 60,000 ft.</p></article>
+      <article class="tourcard glass dark"><div class="row label"><span class="muted">Cabin tour</span><span>3 / 5</span></div><h3 class="sub">Built narrow</h3><span class="rule"></span><p class="copy">The cabin is narrow and the ceiling is low. The whole aircraft is shaped to slip through the air at Mach 2.</p></article>
+      <article class="tourcard glass dark"><div class="row label"><span class="muted">Cabin tour</span><span>4 / 5</span></div><h3 class="sub">Your speed on the wall</h3><span class="rule"></span><p class="copy">A display at the front shows the speed in Mach. On this flight it will pass 2.00.</p></article>
+      <article class="tourcard glass dark"><div class="row label"><span class="muted">Cabin tour</span><span>5 / 5</span></div><h3 class="sub">Three crew up front</h3><span class="rule"></span><p class="copy">Captain, first officer and flight engineer. The engineer faces a whole wall of dials on the right.</p></article>
     </div>
   </section>
 
-  <!-- 2. Take-off: the droop nose -->
+  <!-- 3. Take-off: the droop nose -->
   <section class="scene" id="droop" data-name="Take-off">
     <div class="stage">
       <canvas class="gl" id="droop3d" role="img" aria-label="3D Concorde on the runway. As you scroll the nose lowers on its hinge, the plane rotates nose-high and the nose drops further for landing"></canvas>
       <div class="shade"></div>
-      <div class="head">
-        <span class="label">Take-off</span>
-        <h2>The nose that bows</h2>
-      </div>
-      <div class="factbox glass on-light will" id="factbox">
-        <span class="label state" id="fact-state">Take-off position</span>
+      <span class="label kicker rise">Take-off</span>
+      <h2 aria-label="The nose that bows">
+        <span class="h-pair d2" id="droop-l" aria-hidden="true" data-reveal>The nose</span>
+        <span class="h-pair d2" id="droop-r" aria-hidden="true" data-reveal>that bows</span>
+      </h2>
+      <div class="factbox glass on-light" id="factbox">
+        <span class="label state"><i class="pip"></i><span id="fact-state">Take-off position</span></span>
+        <span class="rule"></span>
         <p class="copy" id="fact-text">Before take-off the long nose is lowered 5 degrees, so the pilots can see past it.</p>
       </div>
       <div class="nosepanel glass on-light" id="nosepanel">
         <div class="top"><span class="label">Nose angle</span><span class="readout" id="readout">0.0°</span></div>
-                <div class="ticks"><span><b>0°</b> nose up</span><span><b>5°</b> take-off</span><span><b>12.5°</b> landing</span></div>
+        <span class="hair"></span>
+        <div class="ticks label" id="ticks"><span><b>0°</b>Nose up</span><span><b>5°</b>Take-off</span><span><b>12.5°</b>Landing</span></div>
       </div>
     </div>
   </section>
