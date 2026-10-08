@@ -285,7 +285,7 @@ a{color:inherit}
       <article class="tourcard"><div class="row label"><span>Cabin tour</span><span>2 / 5</span></div><h3>Small for a reason</h3><p>The windows are tiny because of the pressure difference at about 60,000 ft.</p></article>
       <article class="tourcard"><div class="row label"><span>Cabin tour</span><span>3 / 5</span></div><h3>Built narrow</h3><p>The cabin is narrow and the ceiling is low. The whole aircraft is shaped to slip through the air at Mach 2.</p></article>
       <article class="tourcard"><div class="row label"><span>Cabin tour</span><span>4 / 5</span></div><h3>Your speed on the wall</h3><p>A display at the front shows the speed in Mach. On this flight it will pass 2.00.</p></article>
-      <article class="tourcard"><div class="row label"><span>Cabin tour</span><span>5 / 5</span></div><h3>Three crew up front</h3><p>Behind this door: captain, first officer and flight engineer, surrounded by analogue dials.</p></article>
+      <article class="tourcard"><div class="row label"><span>Cabin tour</span><span>5 / 5</span></div><h3>Three crew up front</h3><p>Captain, first officer and flight engineer. The engineer faces a whole wall of dials on the right.</p></article>
     </div>
   </section>
 
@@ -578,7 +578,7 @@ a{color:inherit}
     }
     // ---- 1b cabin tour (the 3D camera and hotspots are driven in concorde3d.js)
     { const p = P.cabin;
-      const STOPS = [[.05,.17],[.20,.32],[.35,.47],[.50,.66],[.72,.96]];
+      const STOPS = [[.04,.16],[.19,.31],[.34,.46],[.50,.64],[.84,.99]];
       const w = ([a, b]) => seg(p, a - .03, a) * (1 - seg(p, b, b + .03));
       $('cab-intro').style.opacity = 1 - seg(p, .015, .05);
       document.querySelectorAll('#cabin .tourcard').forEach((c, i) => {
