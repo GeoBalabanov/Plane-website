@@ -146,9 +146,6 @@ body.at-end .hud,body.at-end .stagebar{opacity:0}
 .factchip .big{font-size:clamp(34px,3.3vw,50px);font-weight:300;font-stretch:125%;letter-spacing:-.05em;line-height:.9}
 #boarding .veil{position:absolute;inset:0;background:var(--ink);opacity:0;pointer-events:none}
 
-/* ---- scenes below still carry the previous styling; each is rebuilt in turn ---- */
-:root{--mocha:#2b231f;--pearl:#eeebe0;--graphite:#55504a}
-.wide{font-stretch:125%}
 /* ---------- 2. cabin tour ---------- */
 #cabin{height:640vh}
 #cabin .stage{background:var(--ink)}
@@ -227,45 +224,79 @@ body.at-end .hud,body.at-end .stagebar{opacity:0}
 .stretch{display:flex;align-items:center;gap:28px}
 .stretch i{display:block;height:1px;background:var(--paper);width:min(260px,50vw);transform-origin:left center}
 
-/* 6. globe */
-#arrival{height:400vh}
-#arrival .stage{background:radial-gradient(70% 60% at 62% 70%,#1b1a19 0%,#0b0a09 70%)}
-.bigword{position:absolute;left:-1vw;top:2vh;margin:0;font-weight:600;font-stretch:125%;letter-spacing:-.05em;line-height:.8;font-size:clamp(90px,22vw,380px);color:#1e1c1a;white-space:nowrap}
-.globe{position:absolute;left:58%;top:58%;width:min(96vh,92vw);aspect-ratio:1}
-.globe img{width:100%;height:100%}
-.globe svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
-.globe text{font:500 22px var(--mono);letter-spacing:.08em;fill:var(--paper)}
-.ticket{position:absolute;left:clamp(16px,6vw,110px);top:15vh;width:min(330px,72vw);aspect-ratio:330/470;background:#f6f4ef;color:#141210;border-radius:4px;
-  padding:22px;display:grid;grid-template-rows:auto auto 1fr auto auto;gap:10px;box-shadow:0 40px 90px rgba(0,0,0,.55)}
-.ticket .t-big{font-size:clamp(54px,5.6vw,82px);font-weight:500;font-stretch:125%;letter-spacing:-.05em;line-height:.9}
-.ticket .barcode{position:absolute;right:20px;top:22px;width:26px;height:120px;background:repeating-linear-gradient(180deg,#141210 0 2px,transparent 2px 4px,#141210 4px 5px,transparent 5px 8px)}
-.ticket .route{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid #141210;padding-top:12px;font-size:clamp(28px,2.6vw,38px);font-weight:500;font-stretch:125%;letter-spacing:-.03em}
-.ticket .route span{color:var(--flame)}
-.ticket p{margin:0;font-size:13px;line-height:1.5}
-#arrival .landing{position:absolute;left:var(--gutter);bottom:16vh;display:grid;gap:8px}
+/* ---------- 7. arrival and the end: one globe behind both ---------- */
+.finale{position:relative}
+.finale-bg{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden;background:linear-gradient(180deg,var(--umber) 0%,#1f1918 24%,#110d0d 46%,#050404 68%,#000 100%)}
+.bigword{position:absolute;left:50%;top:5vh;white-space:nowrap;font-weight:500;font-stretch:125%;letter-spacing:-.06em;line-height:.8;font-size:clamp(90px,24vw,400px);
+  color:transparent;background:linear-gradient(180deg,#3a2f2c 0%,rgba(58,47,44,.5) 55%,rgba(58,47,44,0) 96%);-webkit-background-clip:text;background-clip:text;will-change:transform}
+.g-label{position:absolute;left:0;top:0;opacity:0;pointer-events:none;will-change:transform,opacity}
+.g-label b{position:absolute;left:14px;top:-22px;white-space:nowrap;font:500 11px/1 var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--paper)}
+#g-jfk b{left:auto;right:14px}
+#arrival{height:400vh;margin-top:-100vh;margin-top:-100svh;z-index:1}
+.ticket{position:absolute;left:clamp(20px,18.3vw,264px);top:16vh;width:min(340px,72vw);aspect-ratio:340/500;background:var(--bone);color:var(--ink);border-radius:4px;
+  padding:20px 22px 24px;display:grid;grid-template-rows:auto auto 1fr auto auto;gap:14px;box-shadow:0 40px 90px rgba(0,0,0,.55)}
+.ticket .t-big{font-size:clamp(60px,6.2vw,96px);font-weight:300;font-stretch:125%;letter-spacing:-.06em;line-height:.82}
+.ticket .barcode{position:absolute;right:20px;top:20px;width:26px;height:124px;background:repeating-linear-gradient(180deg,var(--ink) 0 2px,transparent 2px 4px,var(--ink) 4px 5px,transparent 5px 8px)}
+.ticket .route{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid rgba(10,9,8,.3);padding-top:14px}
+.ticket .route i{font-style:normal;color:var(--flame)}
+#arrival .landing{position:absolute;left:var(--gutter);bottom:14vh;display:grid;gap:22px;justify-items:start;opacity:0}
+.legend{position:absolute;right:var(--gutter);bottom:14vh;width:min(348px,38vw);display:grid;gap:10px;opacity:0}
+.legend .hair{margin-bottom:6px}
+.legend div{display:flex;justify-content:space-between;gap:12px}
+.legend span:first-child{display:flex;align-items:center;gap:10px}
+.legend i{width:20px;height:2px;border-radius:2px;background:var(--flame)}
+.legend .slow i{background:var(--mist)}
 
-/* 7. end */
-#end{min-height:100vh;padding:22vh var(--gutter) 18vh;background:var(--ink);display:grid;align-content:center;gap:28px;position:relative}
-#end .date{margin:0;font-weight:500;font-stretch:125%;letter-spacing:-.05em;line-height:.85;font-size:clamp(56px,13vw,220px)}
-#end .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:28px;max-width:1100px}
-#end p{margin:0;font-size:clamp(17px,1.5vw,22px);line-height:1.45;color:var(--mist);max-width:40ch}
-#end p strong{color:var(--paper);font-weight:500}
-.credits{margin-top:4vh;font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;color:rgba(244,241,234,.45);display:flex;flex-wrap:wrap;gap:12px 32px;border-top:1px solid rgba(244,241,234,.18);padding-top:18px;max-width:1100px}
-
+#end{position:relative;z-index:1;min-height:100vh;min-height:100svh;padding:calc(env(safe-area-inset-top,0px) + 17vh) var(--gutter) calc(env(safe-area-inset-bottom,0px) + 30px);
+  display:grid;grid-template-rows:auto auto 1fr auto;gap:22px}
+#end .kicker{display:flex;align-items:center;gap:8px}
+#end .date{font-size:clamp(54px,12.4vw,200px);line-height:.82;font-variant-numeric:tabular-nums;margin-left:-.04em}
+#end .cols{display:flex;justify-content:space-between;align-items:flex-start;gap:32px;margin-top:3vh}
+#end .cols div{display:grid;gap:22px;justify-items:start;max-width:min(30ch,100%)}
+#end .cols p{color:var(--mist)}
+#end .cols strong{color:var(--paper);font-weight:500}
+#end .cols .q{width:min(348px,38vw);max-width:none}
+#end .cols .q p{color:var(--paper)}
+.credits{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;color:var(--mist);padding-bottom:4px}
+.credits div{display:grid;gap:14px;justify-items:start}
+.credits .l{max-width:32vw}
+.credits .l p{display:grid;gap:6px}
+.credits .r{width:min(348px,38vw);text-align:right;justify-items:stretch}
 
 @media (max-width:720px){
   .nav{grid-template-columns:1fr auto}
   .nav ul{display:none}
   .wordmark{grid-column:1;justify-self:start}
-  .hud{display:none}
-  .stagebar{display:none}
+  .hud,.stagebar{display:none}
   #london{top:13vh}
   #newyork{top:60vh}
   #boarding .intro{bottom:calc(env(safe-area-inset-bottom,0px) + 96px);gap:14px}
   #boarding .scrollhint{display:none}
   .factchip{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 96px)}
+  #cab-l{top:14vh}
+  #cab-r{top:26vh}
+  #cab-copy,.tourcard{bottom:calc(env(safe-area-inset-bottom,0px) + 96px)}
+  #droop-l{top:16vh}
+  #droop-r{top:calc(16vh + 1em);right:auto;left:var(--gutter)}
+  .factbox{bottom:calc(env(safe-area-inset-bottom,0px) + 96px)}
+  .nosepanel{bottom:auto;top:calc(16vh + 120px)}
+  .para{bottom:calc(env(safe-area-inset-bottom,0px) + 100px)}
+  .h-mach{top:15vh}
+  #machtwo{top:calc(15vh + .9em);right:auto;left:var(--gutter)}
+  #mach2 .side-copy{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 100px);max-width:18ch}
+  .spec{display:none}
+  .ticket{left:var(--gutter);top:13vh;width:min(230px,60vw)}
+  #arrival .landing{bottom:calc(env(safe-area-inset-bottom,0px) + 96px)}
+  .legend{display:none}
+  #end{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 104px)}
+  #end .cols{flex-direction:column}
+  #end .cols .q{width:auto}
+  .credits{flex-direction:column;align-items:flex-start}
+  .credits .l{max-width:none}
+  .credits .r{width:auto;text-align:left}
 }
 @media (prefers-reduced-motion:reduce){
-  #boarding .scrollhint svg{animation:none}
+  #boarding .scrollhint svg,.hot .ring::after{animation:none}
   .cta:hover .dot svg{animation:none}
+  .para .w{transition:none}
 }

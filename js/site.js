@@ -1,5 +1,5 @@
 /* Concorde: the scroll engine. Every .scene is a tall track with a sticky stage; its scroll progress (0..1)
-   scrubs the motion. The 3D scenes live in concorde3d.js and are driven from the same progress values. */
+   scrubs the motion. The 3D scenes live in concorde3d.js and globe3d.js and are driven from the same progress values. */
 (() => {
   const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const root = document.documentElement;
@@ -41,8 +41,7 @@
     if (t) { e.preventDefault(); goTo(t); }
   }));
   const next = () => {
-    const y = scrollY + 4;
-    const target = scenes.find(s => s.offsetTop > y);
+    const target = scenes.find(s => s.getBoundingClientRect().top > 4);
     if (target) goTo(target); else goTo(0);
   };
   $('cta-next').addEventListener('click', next);
@@ -248,18 +247,14 @@
       $('temp').textContent = Math.round(lerp(20, 127, ease(seg(p, .55, .85)))) + '°C';
       $('stretch-bar').style.transform = `scaleX(${1 + .06 * ease(seg(p, .7, .95))})`;
     }
-    // ---- 7 arrival
+    // ---- 7 arrival (the globe and its arcs are driven in globe3d.js)
     { const p = P.arrival;
-      const enter = ease(seg(p, 0, .35));
-      set($('globe'), `translate(${lerp(25, -50, enter)}%, -50%) rotate(${lerp(-8, 0, enter)}deg)`);
-      set($('bigword'), `translateX(${-p*8}vw)`, .5 + .5*seg(p, 0, .3));
-      const draw = ease(seg(p, .3, .7));
-      $('arc').setAttribute('stroke-dashoffset', (1 - draw).toFixed(4));
-      $('jfk-dot').setAttribute('opacity', seg(draw, .9, 1));
-      $('jfk-label').setAttribute('opacity', seg(draw, .9, 1));
+      P.endIn = clamp((vh - rects[rects.length - 1].top) / vh);
+      set($('bigword'), `translate(-50%, ${RM ? 0 : lerp(34, 0, ease(seg(p, 0, .85)))}vh)`, (.4 + .6 * seg(p, 0, .3)) * (1 - .55 * P.endIn));
       const t = ease(seg(p, .35, .6)), out = seg(p, .82, .97);
       set($('ticket'), `translateY(${(1 - t) * 110 - out*40}vh) rotate(${lerp(10, -4, t)}deg)`, 1 - out);
-      $('landing').style.opacity = seg(p, .62, .75);
+      $('landing').style.opacity = seg(p, .62, .75) * (1 - seg(p, .92, 1));
+      $('legend').style.opacity = seg(p, .4, .5) * (1 - seg(p, .92, 1));
     }
 
     // ---- HUD + stage bar
@@ -289,11 +284,14 @@
     if (lenis) lenis.raf(t);
     update();
     if (viewOn && !RM) drawView(t);
-    if (window.C3D && lastP && (dirty || C3D.animating())) { C3D.update(lastP, t); dirty = false; }
+    const G = window.G3D;
+    if (G && lastP && (dirty || G.dirty || G.animating())) G.update(lastP, t);
+    if (window.C3D && lastP && (dirty || C3D.animating())) C3D.update(lastP, t);
+    dirty = false;
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
-  addEventListener('resize', () => { last = -1; if (window.C3D) C3D.resize(); });
+  addEventListener('resize', () => { last = -1; if (window.C3D) C3D.resize(); });   // globe3d.js listens for resize itself
   update();
   drawView(0);
 })();

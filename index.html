@@ -183,52 +183,58 @@
     </div>
   </section>
 
-  <!-- 6. Arrival: the route over the globe -->
-  <section class="scene" id="arrival" data-name="Arrival">
-    <div class="stage">
-      <p class="bigword will" id="bigword" aria-hidden="true">Atlantic</p>
-      <div class="globe will" id="globe">
-        <img src="assets/globe.webp" alt="Globe centred on the North Atlantic" width="1024" height="1024">
-        <svg viewBox="0 0 1024 1024" aria-hidden="true">
-          <path id="arc" d="M598 398 Q 430 150 225 460" pathLength="1" fill="none" stroke="#ff5a1f" stroke-width="4" stroke-linecap="round" stroke-dasharray="1 1" stroke-dashoffset="1"/>
-          <circle cx="598" cy="398" r="9" fill="#ff5a1f"/>
-          <circle id="jfk-dot" cx="225" cy="460" r="11" fill="#f4f1ea" stroke="#ff5a1f" stroke-width="4" opacity="0"/>
-          <text x="614" y="390">LHR</text>
-          <text id="jfk-label" x="150" y="505" opacity="0">JFK</text>
-        </svg>
-      </div>
-      <div class="ticket will" id="ticket">
-        <span class="label">Boarding pass</span>
-        <span class="t-big">3.5 h</span>
-        <span class="label" style="align-self:start">London to New York</span>
-        <div class="route">LHR <span>→</span> JFK</div>
-        <p>About 3.5 hours instead of 7 or more. Seat 1A.</p>
-        <i class="barcode" aria-hidden="true"></i>
-      </div>
-      <div class="landing will" id="landing">
-        <span class="label">Approach</span>
-        <p class="copy" style="margin:0;color:var(--mist)">Descending into New York. For landing the nose drops again, now 12.5 degrees.</p>
-      </div>
+  <!-- 7. Arrival and the end: the route over one globe -->
+  <div class="finale" id="finale">
+    <div class="finale-bg">
+      <p class="bigword" id="bigword" aria-hidden="true">Atlantic</p>
+      <canvas class="gl" id="globe3d" role="img" aria-label="A 3D globe turning to the North Atlantic. An orange arc draws the Concorde crossing from London to New York, with a slower white arc for a subsonic jet"></canvas>
+      <span class="g-label" id="g-lhr" aria-hidden="true"><b>LHR</b></span>
+      <span class="g-label" id="g-jfk" aria-hidden="true"><b>JFK</b></span>
     </div>
-  </section>
-  <!-- 7. The end -->
-  <section id="end" data-name="24.10.2003">
-    <span class="label" style="color:var(--flame)">The last British Airways commercial Concorde flight</span>
-    <h2 class="date">24.10.2003</h2>
-    <div class="cols">
-      <p><strong>For 27 years you could cross the Atlantic in about 3.5 hours.</strong> Then it stopped, and the trip went back to 7 hours or more.</p>
-      <p>Would you give up comfort, money or quiet skies to fly this fast again?</p>
-    </div>
-    <div class="credits">
-      <span>Concorde: A Transatlantic Journey</span>
-      <span>Human Centered Design student project</span>
-      <span>Images are AI-generated illustrations, not photographs of the real aircraft</span>
-    </div>
-  </section>
+
+    <section class="scene" id="arrival" data-name="Arrival">
+      <div class="stage">
+        <div class="ticket will" id="ticket">
+          <span class="label">Boarding pass</span>
+          <span class="t-big">3.5 h</span>
+          <span class="label" style="align-self:start">London to New York</span>
+          <div class="route sub"><span>LHR</span><i>→</i><span>JFK</span></div>
+          <p class="copy">About 3.5 hours instead of 7 or more. Seat 1A.</p>
+          <i class="barcode" aria-hidden="true"></i>
+        </div>
+        <div class="landing will" id="landing">
+          <span class="label">Approach</span>
+          <span class="rule"></span>
+          <p class="copy">Descending into New York. For landing the nose drops again, now 12.5 degrees.</p>
+        </div>
+        <div class="legend label will" id="legend">
+          <span class="hair"></span>
+          <div><span><i></i>Concorde</span><span>about 3.5 h</span></div>
+          <div class="slow"><span><i></i>Subsonic</span><span>7 h or more</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8. The end -->
+    <section id="end" data-name="24.10.2003">
+      <span class="label kicker rise"><i class="pip"></i>The last British Airways commercial Concorde flight</span>
+      <h2 class="date d1" data-reveal>24.10.2003</h2>
+      <div class="cols">
+        <div class="rise" style="--d:300"><p class="sub"><strong>For 27 years you could cross the Atlantic in about 3.5 hours.</strong> Then it stopped, and the trip went back to 7 hours or more.</p></div>
+        <div class="q rise" style="--d:450"><span class="rule"></span><p class="sub">Would you give up comfort, money or quiet skies to fly this fast again?</p></div>
+      </div>
+      <span></span>
+      <div class="credits label">
+        <div class="l"><span class="rule"></span><p><span>Concorde: A Transatlantic Journey</span><span>Human Centered Design student project</span></p></div>
+        <div class="r"><span class="hair"></span><span>Images are AI-generated illustrations, not photographs of the real aircraft</span></div>
+      </div>
+    </section>
+  </div>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
 <script src="js/concorde3d.js"></script>
+<script src="js/globe3d.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
 <script src="js/site.js"></script>
 </body>
