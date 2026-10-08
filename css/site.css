@@ -26,6 +26,8 @@ html.lenis,html.lenis body{height:auto}
 body{margin:0;background:var(--ink);color:var(--paper);font-family:var(--display);font-stretch:100%;-webkit-font-smoothing:antialiased;overflow-x:clip}
 body[data-top="light"]{--chrome-top:var(--ink)}
 body[data-bot="light"]{--chrome-bot:var(--ink)}
+/* over the window scene the backdrop is mixed (dark wall, pale frame), so the chrome inverts against whatever is behind it */
+body[data-top="blend"] .nav,body[data-bot="blend"] .hud,body[data-bot="blend"] .stagebar{mix-blend-mode:difference;color:#fff}
 img{max-width:none;display:block}
 a{color:inherit}
 h1,h2,h3,p{margin:0}
@@ -69,7 +71,7 @@ h1,h2,h3,p{margin:0}
   padding:calc(env(safe-area-inset-top,0px) + 24px) calc(var(--gutter) - 10px) 0;color:var(--chrome-top);transition:color .5s var(--out);pointer-events:none}
 .nav a{pointer-events:auto;text-decoration:none}
 .nav ul{display:flex;gap:clamp(4px,1.1vw,16px);margin:0;padding:0;list-style:none}
-.navlink{position:relative;display:block;padding:5px 10px;border-radius:99px;font-size:13px;font-weight:600;letter-spacing:-.02em;line-height:1.35}
+.navlink{position:relative;display:block;white-space:nowrap;padding:5px 10px;border-radius:99px;font-size:13px;font-weight:600;letter-spacing:-.02em;line-height:1.35}
 .navlink::before{content:"";position:absolute;inset:0;border-radius:inherit;background:currentColor;opacity:0;transition:opacity .4s var(--out)}
 .navlink .roll{display:block;height:1.35em;overflow:hidden}
 .navlink .roll span{display:block;position:relative;transition:transform .5s var(--out)}
@@ -77,7 +79,7 @@ h1,h2,h3,p{margin:0}
 .navlink:hover::before,.navlink:focus-visible::before{opacity:.12}
 .navlink:hover .roll span,.navlink:focus-visible .roll span{transform:translateY(-100%)}
 .wordmark{display:block;padding:4px 10px;font-size:clamp(19px,1.55vw,23px);font-weight:200;font-stretch:125%;letter-spacing:.02em;line-height:1;will-change:transform}
-.nav .route{justify-self:end;display:flex;gap:clamp(12px,1.6vw,24px);padding-right:10px;font-family:var(--mono);font-size:11.5px;letter-spacing:.06em}
+.nav .route{justify-self:end;display:flex;white-space:nowrap;gap:clamp(12px,1.6vw,24px);padding-right:10px;font-family:var(--mono);font-size:11.5px;letter-spacing:.06em}
 
 .hud,.stagebar{position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 34px);z-index:50;font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;
   color:var(--chrome-bot);font-variant-numeric:tabular-nums;transition:color .5s var(--out),opacity .5s var(--out)}
@@ -129,7 +131,7 @@ body.at-end .hud,body.at-end .stagebar{opacity:0}
 .h-split{position:absolute;white-space:nowrap;font-size:clamp(50px,9vw,146px);line-height:.86}
 #london{left:var(--gutter);top:17vh}
 #newyork{right:var(--gutter);top:55vh;text-align:right}
-.window{position:absolute;left:50%;top:50%;height:min(74vh,118vw);aspect-ratio:1;transform-origin:50% 59%}
+.window{position:absolute;left:50%;top:50%;height:min(74vh,104vw);aspect-ratio:1;transform-origin:50% 59%}
 .window img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 40px 70px rgba(0,0,0,.55))}
 .window canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 /* pull-down window shade, built from the shade in the photo and cut to the window recess (image box is 1024 units) */
@@ -263,12 +265,28 @@ body.at-end .hud,body.at-end .stagebar{opacity:0}
 .credits .l p{display:grid;gap:6px}
 .credits .r{width:min(348px,38vw);text-align:right;justify-items:stretch}
 
+@media (max-aspect-ratio:1/1){
+  .window{height:min(60vh,104vw)}
+  #london{top:9vh}
+  .factchip{top:auto;bottom:14vh}
+}
+@media (max-width:1000px){
+  #end{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 104px)}
+  .credits{flex-direction:column;align-items:flex-start}
+  .credits .l{max-width:none}
+  .credits .r{width:auto;text-align:left}
+}
+@media (max-width:900px){
+  .nav nav{display:none}
+  .wordmark{grid-column:2}
+  .nav .route{grid-column:3}
+}
 @media (max-width:720px){
-  .nav{grid-template-columns:1fr auto}
-  .nav ul{display:none}
+  .nav{grid-template-columns:auto 1fr}
   .wordmark{grid-column:1;justify-self:start}
+  .nav .route{grid-column:2}
   .hud,.stagebar{display:none}
-  #london{top:13vh}
+  #london{top:12vh}
   #newyork{top:60vh}
   #boarding .intro{bottom:calc(env(safe-area-inset-bottom,0px) + 96px);gap:14px}
   #boarding .scrollhint{display:none}
@@ -288,12 +306,8 @@ body.at-end .hud,body.at-end .stagebar{opacity:0}
   .ticket{left:var(--gutter);top:13vh;width:min(230px,60vw)}
   #arrival .landing{bottom:calc(env(safe-area-inset-bottom,0px) + 96px)}
   .legend{display:none}
-  #end{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 104px)}
   #end .cols{flex-direction:column}
   #end .cols .q{width:auto}
-  .credits{flex-direction:column;align-items:flex-start}
-  .credits .l{max-width:none}
-  .credits .r{width:auto;text-align:left}
 }
 @media (prefers-reduced-motion:reduce){
   #boarding .scrollhint svg,.hot .ring::after{animation:none}

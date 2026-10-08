@@ -24,7 +24,7 @@ overridden with the project's own fonts and accent. Reference for structure and 
 - Text on dark is `--paper`; muted text is `--paper` at 62%.
 - Text on light is `--ink`; muted text is `--stone`.
 - `--flame` on a light background is below 4.5:1, so there it marks a dot or a line, never small text.
-- Fixed chrome (nav, HUD) switches between `--paper` and `--ink` with the scene underneath.
+- Fixed chrome (nav, HUD) switches between `--paper` and `--ink` with the scene underneath. Over the window scene, where the backdrop is mixed, it uses `mix-blend-mode: difference` instead.
 
 ## Typography
 

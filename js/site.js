@@ -158,11 +158,11 @@
     if (y === last) return; last = y;
     const vh = innerHeight;
     const P = {}, rects = scenes.map(s => s.getBoundingClientRect());
-    let top = 'dark', bot = 'dark';
+    let top = 'blend', bot = 'blend';
     scenes.forEach((s, i) => {
       const r = rects[i], span = s.offsetHeight - vh;
       P[s.id] = span > 0 ? clamp(-r.top / span) : (r.top <= 0 ? 1 : 0);
-      const tone = LIGHT[s.id] ? 'light' : 'dark';
+      const tone = i === 0 ? 'blend' : LIGHT[s.id] ? 'light' : 'dark';
       if (r.top <= 44 && r.bottom > 44) top = tone;
       if (r.top <= vh - 44 && r.bottom > vh - 44) bot = tone;
       // entrances play when a stage has come most of the way in, and reset once it has left
@@ -196,7 +196,6 @@
       // the wordmark starts on the window shade and rides up into the nav as the shade lifts
       const k = (RM || innerWidth <= 720) ? 0 : 1 - ease(seg(p, .02, .2));
       wordmark.style.transform = k ? `translateY(${k * (vh * .5 - 40)}px) scale(${1 + k * .55})` : '';
-      wordmark.style.color = k ? `color-mix(in srgb, var(--ink) ${Math.round(k * 78)}%, var(--chrome-top))` : '';
     }
     // ---- 2 cabin tour (the 3D camera and hotspots are driven in concorde3d.js)
     { const p = P.cabin;
@@ -232,7 +231,8 @@
     }
     // ---- 5 mach 2 plane
     { const p = P.mach2;
-      const grow = ease(seg(p, .5, .95)), spread = ease(seg(p, .15, .6));
+      const wide = innerWidth > 720 ? 1 : 0;                      // on a phone the two words are stacked, so they stay put
+      const grow = ease(seg(p, .5, .95)) * wide, spread = ease(seg(p, .15, .6)) * wide;
       set($('flyat'), `translateX(${-spread*3 - grow*4}vw)`);
       set($('machtwo'), `translateX(${spread*3 + grow*4}vw)`);
       const info = seg(p, .12, .3) * (1 - seg(p, .62, .78));
