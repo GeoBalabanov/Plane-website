@@ -136,6 +136,11 @@ function start() {
     for (let b = 0; b < blades; b++) {
       const a = b * 2.4 + Math.random(), c = Math.cos(a), sn = Math.sin(a), ox = (Math.random() - .5) * spread, oz = (Math.random() - .5) * spread, base = pos.length / 3;
       const l = .12 + Math.random() * .3, tall = .65 + Math.random() * .35;
+      if (seg === 0) {                                       // far away a blade is one thin triangle: two roots and a tip
+        for (const sd of [-1, 1]) { pos.push(ox, 0, oz); lean.push(0, 0); wv.push(sd * .5 * c, sd * .5 * sn); }
+        pos.push(ox, tall, oz); lean.push(-sn * l, c * l); wv.push(0, 0); idx.push(base, base + 1, base + 2);
+        continue;
+      }
       for (let i = 0; i <= seg; i++) { const y = i / seg, wd = .5 * (1 - y * .92);
         for (const sd of [-1, 1]) { pos.push(ox, y * tall, oz); lean.push(-sn * l * y * y, c * l * y * y); wv.push(sd * wd * c, sd * wd * sn); } }
       for (let i = 0; i < seg; i++) { const k = base + i * 2; idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); }
@@ -170,7 +175,7 @@ function start() {
           float edge = 1. - smoothstep(${(T * .3).toFixed(1)}, ${(T * .5).toFixed(1)}, length(w - focus));
           float inner = hole.z > 0. ? smoothstep(hole.z * .55, hole.z * .85, length(w - hole.xy)) : 1.;   // the fine patch has this ground
           float keep = (1. - min(paved, 1.)) * edge * inner;
-          float h = shape.x * keep * (.7 + .6 * n2(w * .3)), wd = shape.y, a = shape.z;
+          float h = shape.x * keep * (.7 + .6 * n2(w * .3)), wd = shape.y * min(1., keep * 12.), a = shape.z;   // hidden blades vanish, not lie flat
           float y = position.y;
           vec3 p = vec3(position.x + lean.x * h + wv.x * wd, position.y * h, position.z + lean.y * h + wv.y * wd);
           p.xz = mat2(cos(a), -sin(a), sin(a), cos(a)) * p.xz;
@@ -206,8 +211,8 @@ function start() {
   }
   const GT = 56;
   const fields = [
-    makeGrass({ T: GT, count: PHONE ? 34000 : 95000, blades: 3, spread: .07, h: [.08, .26], w: [.007, .012], seg: 3 }),
-    makeGrass({ T: 200, count: PHONE ? 36000 : 110000, blades: 7, spread: .5, h: [.18, .36], w: [.025, .04], hole: GT * .5, seg: 1 }),
+    makeGrass({ T: GT, count: PHONE ? 40000 : 115000, blades: 3, spread: .07, h: [.08, .26], w: [.007, .012], seg: 3 }),
+    makeGrass({ T: 280, count: PHONE ? 50000 : 190000, blades: 8, spread: .55, h: [.18, .36], w: [.025, .04], hole: GT * .5, seg: 0 }),
   ];
   const grass = { set visible(v) { fields.forEach(f => f.mesh.visible = v); }, get visible() { return fields[0].mesh.visible; } };
 
