@@ -5,241 +5,48 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Concorde: A Transatlantic Journey</title>
 <meta name="description" content="A scroll-driven virtual Concorde flight from London Heathrow to New York JFK.">
+<meta name="theme-color" content="#0a0908">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%230a0908'/%3E%3Cpath d='M12 3l2 9 6 6-6-1.6-2 4.6-2-4.6L4 18l6-6z' fill='%23ff5a1f'/%3E%3C/svg%3E">
+<script>document.documentElement.className = 'js' + (matchMedia('(prefers-reduced-motion: reduce)').matches ? ' rm' : '');</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,200..800&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<style>
-/* Layout: six pinned full-screen scenes (sticky stage inside a tall track), scroll position scrubs every motion; one closing section in normal flow. Single cinematic look, so colours are set explicitly. */
-:root{
-  --ink:#0b0a09;          /* night cabin, stratosphere */
-  --mocha:#2b231f;        /* cabin wall glow */
-  --pearl:#eeebe0;        /* paper of the top-down plane photo */
-  --paper:#f4f1ea;        /* light text on dark */
-  --mist:rgba(244,241,234,.62);
-  --graphite:#55504a;     /* muted text on light */
-  --flame:#ff5a1f;        /* reheat orange, used sparingly */
-  --glass:rgba(255,255,255,.58);
-  --display:"Archivo","Helvetica Neue",Arial,sans-serif;
-  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
-  --gutter:clamp(16px,3.4vw,48px);
-  color-scheme:dark;
-}
-*{box-sizing:border-box}
-html{background:var(--ink)}
-html.lenis,html.lenis body{height:auto}
-.lenis.lenis-smooth{scroll-behavior:auto!important}
-body{margin:0;background:var(--ink);color:var(--paper);font-family:var(--display);font-stretch:100%;-webkit-font-smoothing:antialiased;overflow-x:clip}
-img{max-width:none;display:block}
-a{color:inherit}
-:focus-visible{outline:2px solid var(--flame);outline-offset:3px;border-radius:4px}
-
-/* ---------- fixed chrome ---------- */
-.nav{position:fixed;inset:0 0 auto 0;z-index:50;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;
-  padding:calc(env(safe-area-inset-top,0px) + 22px) var(--gutter) 0;color:#fff;mix-blend-mode:difference;pointer-events:none}
-.nav a,.nav button{pointer-events:auto}
-.nav ul{display:flex;gap:clamp(14px,2.2vw,34px);margin:0;padding:0;list-style:none}
-.nav a{text-decoration:none;font-size:13px;font-weight:500;letter-spacing:.01em}
-.nav a:hover{text-decoration:underline;text-underline-offset:4px}
-.wordmark{font-size:clamp(17px,1.6vw,22px);font-weight:400;font-stretch:125%;letter-spacing:.14em;text-transform:uppercase;text-decoration:none}
-.nav .route{justify-self:end;font-family:var(--mono);font-size:12px;letter-spacing:.06em;display:flex;gap:22px}
-.hud{position:fixed;left:var(--gutter);bottom:calc(env(safe-area-inset-bottom,0px) + 26px);z-index:50;font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;
-  text-transform:uppercase;color:#fff;mix-blend-mode:difference;display:grid;grid-template-columns:auto auto;gap:4px 14px;font-variant-numeric:tabular-nums}
-.hud span:nth-child(odd){opacity:.6}
-.stagebar{position:fixed;right:var(--gutter);bottom:calc(env(safe-area-inset-bottom,0px) + 26px);z-index:50;width:min(220px,30vw);color:#fff;mix-blend-mode:difference;
-  font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase}
-.stagebar .track{height:1px;background:rgba(255,255,255,.35);margin-top:10px}
-.stagebar .fill{height:1px;background:#fff;width:0%}
-.stagebar .row{display:flex;justify-content:space-between;gap:12px}
-.cta{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 22px);transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:6px}
-.cta button{font:500 13px/1 var(--display);letter-spacing:.01em;border:0;cursor:pointer;color:#111;background:rgba(255,255,255,.82);
-  -webkit-backdrop-filter:blur(14px) saturate(1.3);backdrop-filter:blur(14px) saturate(1.3);box-shadow:0 6px 30px rgba(0,0,0,.18),inset 0 0 0 1px rgba(255,255,255,.7)}
-.cta .pill{padding:15px 24px;border-radius:999px}
-.cta .dot{width:44px;height:44px;border-radius:50%;display:grid;place-items:center}
-.cta button:hover{background:#fff}
-
-/* ---------- scenes ---------- */
-.scene{position:relative}
-.stage{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden}
-.label{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase}
-.wide{font-stretch:125%}
-.copy{font-size:clamp(14px,1.05vw,16px);line-height:1.55;max-width:34ch}
-.glass{background:var(--glass);-webkit-backdrop-filter:blur(18px) saturate(1.25);backdrop-filter:blur(18px) saturate(1.25);
-  border:1px solid rgba(255,255,255,.65);border-radius:20px;color:#141210;box-shadow:0 20px 60px rgba(30,20,10,.12)}
-.will{will-change:transform,opacity}
-
-/* 1. window */
-#boarding{height:430vh}
-#boarding .stage{background:radial-gradient(60% 70% at 50% 48%,#6a574b 0%,#3a2e28 34%,#171311 66%,#0b0a09 100%)}
-#boarding .glow{position:absolute;inset:0;background:radial-gradient(30% 38% at 50% 50%,rgba(255,236,214,.18),transparent 70%)}
-.h-split{position:absolute;margin:0;font-weight:500;font-stretch:125%;letter-spacing:-.035em;line-height:.9;font-size:clamp(46px,9.6vw,158px);color:var(--paper);white-space:nowrap}
-#london{left:var(--gutter);top:19vh}
-#newyork{right:var(--gutter);top:56vh;text-align:right}
-.window{position:absolute;left:50%;top:50%;height:min(78vh,118vw);aspect-ratio:1;transform-origin:50% 59%}
-.window img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 40px 70px rgba(0,0,0,.55))}
-.window canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-/* pull-down window shade, built from the shade in the photo and cut to the window recess (image box is 1024 units) */
-.shade-clip{position:absolute;left:19.434%;top:26.37%;width:61.133%;height:60.55%;overflow:hidden;pointer-events:none;
-  -webkit-mask:url(assets/shade-mask.png) 0 0/100% 100% no-repeat;mask:url(assets/shade-mask.png) 0 0/100% 100% no-repeat}
-.shade-panel{position:absolute;inset:0;background:url(assets/shade-panel.webp) 0 0/100% 100% no-repeat;will-change:transform}
-.shade-edge{position:absolute;inset:0;background:url(assets/shade-edge.png) 0 0/100% 100% no-repeat}
-.shade-shadow{position:absolute;left:0;right:0;top:100%;height:6%;background:linear-gradient(180deg,rgba(0,0,0,.45),rgba(0,0,0,0))}
-#boarding .intro{position:absolute;left:var(--gutter);bottom:15vh;display:grid;gap:14px}
-#boarding .intro .rule{width:34px;height:1px;background:var(--paper)}
-#boarding .scrollhint{position:absolute;right:var(--gutter);bottom:15vh;width:min(320px,40vw);border-top:1px solid rgba(244,241,234,.5);padding-top:12px;display:flex;justify-content:space-between}
-.factchip{position:absolute;right:var(--gutter);top:24vh;width:min(330px,80vw);padding:20px 22px;display:grid;gap:10px}
-.factchip .big{font-size:clamp(30px,3vw,44px);font-weight:500;font-stretch:125%;letter-spacing:-.03em;line-height:1}
-#boarding .veil{position:absolute;inset:0;background:#0b0a09;opacity:0;pointer-events:none}
-
-/* 1b. cabin tour */
-#cabin{height:640vh}
-#cabin .stage{background:#0b0a09}
-.gl{position:absolute;inset:0;width:100%;height:100%;display:block}
-.hot{position:absolute;left:0;top:0;width:0;height:0;opacity:0;pointer-events:none;will-change:transform,opacity}
-.hot .ring{position:absolute;left:-15px;top:-15px;width:30px;height:30px;border-radius:50%;border:1.5px solid #fff;background:rgba(255,255,255,.16);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
-.hot .ring::after{content:"";position:absolute;inset:-1.5px;border-radius:50%;border:1.5px solid #fff;animation:ping 2.2s cubic-bezier(.2,.7,.3,1) infinite}
-.hot .tag{position:absolute;left:24px;top:-12px;white-space:nowrap;font:500 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:#fff;
-  padding:6px 10px;border-radius:999px;background:rgba(10,10,10,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
-.hot.left .tag{left:auto;right:24px}
-@keyframes ping{0%{transform:scale(1);opacity:.9}100%{transform:scale(2.4);opacity:0}}
-#cabin .shade-b{position:absolute;inset:0;background:linear-gradient(180deg,rgba(11,10,9,.55) 0%,rgba(11,10,9,0) 26%,rgba(11,10,9,0) 55%,rgba(11,10,9,.8) 100%);pointer-events:none}
-#cabin .intro-title{position:absolute;left:var(--gutter);top:16vh;display:grid;gap:12px;max-width:min(760px,90vw)}
-#cabin .intro-title h2{margin:0;font-weight:500;font-stretch:125%;letter-spacing:-.04em;line-height:.9;font-size:clamp(46px,8vw,132px)}
-.tourcard{position:absolute;left:var(--gutter);bottom:13vh;width:min(400px,calc(100vw - 2*var(--gutter)));padding:20px 22px;border-radius:20px;opacity:0;
-  background:rgba(14,13,12,.58);-webkit-backdrop-filter:blur(18px) saturate(1.2);backdrop-filter:blur(18px) saturate(1.2);border:1px solid rgba(255,255,255,.14);display:grid;gap:10px}
-.tourcard .row{display:flex;justify-content:space-between;gap:12px;color:var(--mist)}
-.tourcard h3{margin:0;font-weight:500;font-stretch:125%;letter-spacing:-.03em;font-size:clamp(24px,2.2vw,32px);line-height:1}
-.tourcard p{margin:0;font-size:15px;line-height:1.5;color:rgba(244,241,234,.86)}
-.tourcard .dots{display:flex;gap:6px}
-.tourcard .dots i{width:18px;height:2px;background:rgba(244,241,234,.25)}
-.tourcard .dots i.on{background:var(--flame)}
-
-/* 2. droop */
-#droop{height:420vh}
-#droop .stage{background:linear-gradient(180deg,#f4f0e9 0%,#ece6dd 52%,#e4ded4 100%);color:#141210}
-#droop .shade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(244,240,233,.7) 0%,rgba(244,240,233,0) 30%,rgba(244,240,233,0) 70%,rgba(228,222,212,.6) 100%)}
-#droop .head{position:absolute;left:var(--gutter);top:13vh;max-width:min(860px,92vw)}
-#droop h2{margin:10px 0 0;font-weight:500;font-stretch:125%;letter-spacing:-.035em;line-height:.92;font-size:clamp(40px,7.2vw,118px)}
-.nosepanel{position:absolute;right:var(--gutter);bottom:12vh;width:min(440px,calc(100vw - 2*var(--gutter)));padding:20px 22px 18px;display:grid;gap:12px}
-.nosepanel .top{display:flex;justify-content:space-between;align-items:baseline;gap:16px}
-.readout{font-size:clamp(44px,4.6vw,64px);font-weight:500;font-stretch:125%;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums}
-.ticks{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--graphite)}
-.ticks b{font-weight:500;color:#141210}
-.factbox{position:absolute;left:var(--gutter);bottom:12vh;width:min(380px,calc(100vw - 2*var(--gutter)));padding:20px 22px;display:grid;gap:8px}
-.factbox p{margin:0}
-.factbox .state{color:#b43e10}
-
-/* 3. clouds */
-#boom{height:330vh}
-#boom .stage{background:#5d8fc2}
-#boom .photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform-origin:50% 60%}
-#boom .tint{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,30,60,.35),rgba(10,30,60,.05) 45%,rgba(255,255,255,.1))}
-.para{position:absolute;left:var(--gutter);right:var(--gutter);top:20vh;margin:0;font-weight:500;font-stretch:112%;letter-spacing:-.03em;line-height:1.02;font-size:clamp(30px,5.1vw,84px);color:#fff;max-width:17ch;text-wrap:balance}
-.para .w{opacity:.16;transition:opacity .25s linear}
-.para.ghost{color:rgba(255,255,255,.95);filter:blur(7px);transform:translateY(.32em);pointer-events:none}
-.para.ghost .w{opacity:0}
-#boom .meter{position:absolute;left:var(--gutter);bottom:16vh;display:grid;gap:6px}
-#boom .mach{font-size:clamp(56px,7vw,110px);font-weight:400;font-stretch:125%;letter-spacing:-.04em;line-height:.9;font-variant-numeric:tabular-nums}
-
-/* 4. top-down plane */
-#mach2{height:420vh}
-#mach2 .stage{background:var(--pearl);color:#16120f}
-#mach2 .tintlayer{position:absolute;inset:0;pointer-events:none;mix-blend-mode:multiply;z-index:4;
-  background:radial-gradient(80% 60% at 50% 30%,#fbf3f1 0%,transparent 60%),linear-gradient(180deg,#f5e9e8 0%,#efe2e6 45%,#e3dcea 100%)}
-.h-mach{position:absolute;top:44vh;margin:0;font-weight:400;font-stretch:125%;letter-spacing:-.04em;line-height:.9;font-size:clamp(46px,10vw,168px);z-index:1;white-space:nowrap}
-#mach3d{z-index:2}
-#flyat{left:var(--gutter)}
-#machtwo{right:var(--gutter)}
-#mach2 .side-copy{position:absolute;left:var(--gutter);top:calc(44vh + clamp(60px,9vw,150px));z-index:3;display:grid;gap:8px}
-.spec{position:absolute;right:var(--gutter);top:calc(44vh + clamp(60px,9vw,150px));width:min(300px,42vw);z-index:3;font-size:12.5px}
-.spec h3{margin:0 0 10px;font:500 12px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;display:flex;justify-content:space-between;border-bottom:1px solid #16120f;padding-bottom:10px}
-.spec dl{margin:0;display:grid;grid-template-columns:1fr auto;gap:8px 12px}
-.spec dt{color:var(--graphite)}
-.spec dd{margin:0;font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
-
-/* 5. earth */
-#cruise{height:320vh}
-#cruise .stage{background:#04060b}
-#cruise .photo{position:absolute;left:-4%;width:108%;height:100%;object-fit:cover;object-position:50% 60%}
-#cruise .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(4,6,11,.95) 0%,rgba(4,6,11,.75) 40%,rgba(4,6,11,0) 68%)}
-#cruise .block{position:absolute;left:var(--gutter);top:14vh;display:grid;gap:14px;max-width:min(900px,92vw)}
-#cruise h2{margin:0;font-weight:400;font-stretch:125%;letter-spacing:-.045em;line-height:.9;font-size:clamp(50px,10vw,170px);font-variant-numeric:tabular-nums}
-#cruise .heat h2{color:#ffb08a}
-#cruise .heat{position:absolute;left:var(--gutter);top:14vh;display:grid;gap:14px;opacity:0}
-.stretch{display:flex;align-items:center;gap:12px;font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--flame)}
-.stretch i{display:block;height:1px;background:var(--paper);width:260px;transform-origin:left center}
-
-/* 6. globe */
-#arrival{height:400vh}
-#arrival .stage{background:radial-gradient(70% 60% at 62% 70%,#1b1a19 0%,#0b0a09 70%)}
-.bigword{position:absolute;left:-1vw;top:2vh;margin:0;font-weight:600;font-stretch:125%;letter-spacing:-.05em;line-height:.8;font-size:clamp(90px,22vw,380px);color:#1e1c1a;white-space:nowrap}
-.globe{position:absolute;left:58%;top:58%;width:min(96vh,92vw);aspect-ratio:1}
-.globe img{width:100%;height:100%}
-.globe svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
-.globe text{font:500 22px var(--mono);letter-spacing:.08em;fill:var(--paper)}
-.ticket{position:absolute;left:clamp(16px,6vw,110px);top:15vh;width:min(330px,72vw);aspect-ratio:330/470;background:#f6f4ef;color:#141210;border-radius:4px;
-  padding:22px;display:grid;grid-template-rows:auto auto 1fr auto auto;gap:10px;box-shadow:0 40px 90px rgba(0,0,0,.55)}
-.ticket .t-big{font-size:clamp(54px,5.6vw,82px);font-weight:500;font-stretch:125%;letter-spacing:-.05em;line-height:.9}
-.ticket .barcode{position:absolute;right:20px;top:22px;width:26px;height:120px;background:repeating-linear-gradient(180deg,#141210 0 2px,transparent 2px 4px,#141210 4px 5px,transparent 5px 8px)}
-.ticket .route{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid #141210;padding-top:12px;font-size:clamp(28px,2.6vw,38px);font-weight:500;font-stretch:125%;letter-spacing:-.03em}
-.ticket .route span{color:var(--flame)}
-.ticket p{margin:0;font-size:13px;line-height:1.5}
-#arrival .landing{position:absolute;left:var(--gutter);bottom:16vh;display:grid;gap:8px}
-
-/* 7. end */
-#end{min-height:100vh;padding:22vh var(--gutter) 18vh;background:var(--ink);display:grid;align-content:center;gap:28px;position:relative}
-#end .date{margin:0;font-weight:500;font-stretch:125%;letter-spacing:-.05em;line-height:.85;font-size:clamp(56px,13vw,220px)}
-#end .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:28px;max-width:1100px}
-#end p{margin:0;font-size:clamp(17px,1.5vw,22px);line-height:1.45;color:var(--mist);max-width:40ch}
-#end p strong{color:var(--paper);font-weight:500}
-.credits{margin-top:4vh;font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;color:rgba(244,241,234,.45);display:flex;flex-wrap:wrap;gap:12px 32px;border-top:1px solid rgba(244,241,234,.18);padding-top:18px;max-width:1100px}
-
-@media (max-width:720px){
-  .nav{grid-template-columns:1fr auto}
-  .nav ul{display:none}
-  .nav .route{gap:10px}
-  .stagebar{display:none}
-  #boarding .scrollhint{display:none}
-  .factchip{top:auto;bottom:24vh;right:var(--gutter)}
-  #newyork{top:62vh}
-  .spec{display:none}
-  .globe{left:50%;top:66%}
-  .ticket{left:var(--gutter);top:14vh;width:min(250px,64vw)}
-  .nosepanel{bottom:calc(12vh + 150px)}
-  .factbox{bottom:10vh}
-  .hud{display:none}
-}
-@media (prefers-reduced-motion:reduce){
-  .para .w{transition:none}
-}
-</style>
+<link rel="stylesheet" href="css/site.css">
+<noscript><style>.preloader{display:none}</style></noscript>
 </head>
 <body>
 
+<div class="preloader" aria-hidden="true">
+  <div class="in"><span class="mark">Concorde</span><span class="label muted">London Heathrow to New York JFK</span></div>
+</div>
+
 <header class="nav">
-  <ul>
-    <li><a href="#boarding">Boarding</a></li>
-    <li><a href="#cabin">Cabin</a></li>
-    <li><a href="#droop">Droop nose</a></li>
-    <li><a href="#mach2">Mach 2</a></li>
-    <li><a href="#arrival">Arrival</a></li>
-  </ul>
-  <a class="wordmark" href="#boarding">Concorde</a>
+  <nav aria-label="Scenes">
+    <ul>
+      <li><a class="navlink" href="#boarding"><span class="roll"><span data-t="Boarding">Boarding</span></span></a></li>
+      <li><a class="navlink" href="#cabin"><span class="roll"><span data-t="Cabin">Cabin</span></span></a></li>
+      <li><a class="navlink" href="#droop"><span class="roll"><span data-t="Droop nose">Droop nose</span></span></a></li>
+      <li><a class="navlink" href="#mach2"><span class="roll"><span data-t="Mach 2">Mach 2</span></span></a></li>
+      <li><a class="navlink" href="#arrival"><span class="roll"><span data-t="Arrival">Arrival</span></span></a></li>
+    </ul>
+  </nav>
+  <a class="wordmark" id="wordmark" href="#boarding">Concorde</a>
   <div class="route"><span>LHR → JFK</span><span>1976 / 2003</span></div>
 </header>
 
 <div class="hud" aria-hidden="true">
-  <span>Alt</span><span id="hud-alt">0 ft</span>
-  <span>Mach</span><span id="hud-mach">0.00</span>
-  <span>Time</span><span id="hud-time">T+0:00</span>
+  <span><i>Alt</i><b id="hud-alt">0 ft</b></span>
+  <span><i>Mach</i><b id="hud-mach">0.00</b></span>
+  <span id="hud-time">T+0:00</span>
 </div>
 <div class="stagebar" aria-hidden="true">
-  <div class="row"><span id="stage-name">Boarding</span><span id="stage-num">1 / 7</span></div>
   <div class="track"><div class="fill" id="stage-fill"></div></div>
+  <div class="row"><span id="stage-name">Boarding</span><span id="stage-num">1 / 7</span></div>
 </div>
 <div class="cta">
   <button class="pill" id="cta-next" type="button">Begin the flight</button>
   <button class="dot" id="cta-dot" type="button" aria-label="Next scene">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2.5 13.2l7.3-1.6 4.8-8.1c.4-.6 1.4-.4 1.4.4l-.6 7.1 5.6 1c.9.2.9 1.4 0 1.6l-5.6 1 .6 7.1c0 .8-1 1-1.4.4l-4.8-8.1-7.3-1.6c-.5-.1-.5-.9 0-1z" fill="#111" transform="rotate(-45 12 12)"/></svg>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2.5 13.2l7.3-1.6 4.8-8.1c.4-.6 1.4-.4 1.4.4l-.6 7.1 5.6 1c.9.2.9 1.4 0 1.6l-5.6 1 .6 7.1c0 .8-1 1-1.4.4l-4.8-8.1-7.3-1.6c-.5-.1-.5-.9 0-1z" fill="currentColor" transform="rotate(-45 12 12)"/></svg>
   </button>
 </div>
 
@@ -248,19 +55,23 @@ a{color:inherit}
   <section class="scene" id="boarding" data-name="Boarding">
     <div class="stage">
       <div class="glow"></div>
-      <h1 class="h-split will" id="london">London</h1>
+      <h1 class="h-split d1 will" id="london" data-reveal>London</h1>
       <div class="window will" id="window"><img src="assets/window.webp" alt="A small oval cabin window looking out at the airport at dusk, runway lights glowing" width="1024" height="1024"><canvas id="view" aria-hidden="true"></canvas><div class="shade-clip" aria-hidden="true"><div class="shade-panel" id="shade"><i class="shade-shadow"></i></div><div class="shade-edge" id="shade-edge"></div></div></div>
-      <p class="h-split will" id="newyork" aria-hidden="true">New York</p>
+      <p class="h-split d1 will" id="newyork" aria-hidden="true" data-reveal>New York</p>
       <div class="intro will" id="intro">
-        <span class="label">Seat 1A</span>
-        <span class="rule"></span>
-        <p class="copy">A virtual Concorde flight from London Heathrow to New York JFK. About 3.5 hours. Scroll to open your window shade.</p>
+        <p class="sub rise" style="--d:500">Seat 1A,<br>by the window</p>
+        <span class="rule rise" style="--d:600"></span>
+        <p class="copy rise" style="--d:700">A virtual Concorde flight from London Heathrow to New York JFK. About 3.5 hours. Scroll to open your window shade.</p>
       </div>
-      <div class="scrollhint label will" id="scrollhint"><span>↓ Scroll</span><span>to open the shade</span></div>
+      <div class="scrollhint label will" id="scrollhint">
+        <span class="rise" style="--d:800"><svg width="10" height="12" viewBox="0 0 10 12" fill="none" aria-hidden="true"><path d="M5 0v10M1 6.5l4 4 4-4" stroke="currentColor" stroke-width="1.4"/></svg>Scroll down</span>
+        <span class="rise" style="--d:900">To open the shade</span>
+      </div>
       <div class="factchip glass will" id="factchip">
-        <span class="label">Why so small?</span>
+        <span class="label muted">Why so small?</span>
         <span class="big">60,000 ft</span>
-        <p class="copy" style="margin:0">Concorde's windows were tiny because of the pressure difference at about 60,000 ft.</p>
+        <span class="rule"></span>
+        <p class="copy">Concorde's windows were tiny because of the pressure difference at about 60,000 ft.</p>
       </div>
       <div class="veil" id="veil"></div>
     </div>
@@ -298,11 +109,11 @@ a{color:inherit}
         <span class="label">Take-off</span>
         <h2>The nose that bows</h2>
       </div>
-      <div class="factbox glass will" id="factbox">
+      <div class="factbox glass on-light will" id="factbox">
         <span class="label state" id="fact-state">Take-off position</span>
         <p class="copy" id="fact-text">Before take-off the long nose is lowered 5 degrees, so the pilots can see past it.</p>
       </div>
-      <div class="nosepanel glass" id="nosepanel">
+      <div class="nosepanel glass on-light" id="nosepanel">
         <div class="top"><span class="label">Nose angle</span><span class="readout" id="readout">0.0°</span></div>
                 <div class="ticks"><span><b>0°</b> nose up</span><span><b>5°</b> take-off</span><span><b>12.5°</b> landing</span></div>
       </div>
@@ -393,7 +204,6 @@ a{color:inherit}
       </div>
     </div>
   </section>
-
   <!-- 7. The end -->
   <section id="end" data-name="24.10.2003">
     <span class="label" style="color:var(--flame)">The last British Airways commercial Concorde flight</span>
@@ -413,262 +223,6 @@ a{color:inherit}
 <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
 <script src="js/concorde3d.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
-<script>
-(() => {
-  const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const $ = id => document.getElementById(id);
-  const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
-  const seg = (p, a, b) => clamp((p - a) / (b - a));          // local 0..1 between a and b
-  const ease = t => t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
-  const lerp = (a, b, t) => a + (b - a) * t;
-
-  // split the paragraph into words for the reveal
-  const para = $('para'), ghost = $('para-ghost');
-  const words = para.textContent.trim().split(/\s+/);
-  para.innerHTML = words.map(w => `<span class="w">${w}</span>`).join(' ');
-  ghost.innerHTML = words.map(w => `<span class="w">${w}</span>`).join(' ');
-  const pw = [...para.querySelectorAll('.w')], gw = [...ghost.querySelectorAll('.w')];
-
-  const scenes = [...document.querySelectorAll('.scene'), $('end')];
-  const progressOf = el => {
-    const r = el.getBoundingClientRect();
-    const span = el.offsetHeight - innerHeight;
-    return span > 0 ? clamp(-r.top / span) : (r.top <= 0 ? 1 : 0);
-  };
-
-  // smooth scroll
-  let lenis = null;
-  if (window.Lenis && !RM) {
-    lenis = new Lenis({ lerp: 0.085, wheelMultiplier: 0.9, smoothWheel: true });
-  }
-  const goTo = target => {
-    if (lenis) return lenis.scrollTo(target, { duration: 1.6 });
-    const top = typeof target === 'number' ? target : target.getBoundingClientRect().top + scrollY;
-    scrollTo({ top, behavior: RM ? 'auto' : 'smooth' });
-  };
-  document.querySelectorAll('a[href^="#"]').forEach(a => a.addEventListener('click', e => {
-    const t = document.querySelector(a.getAttribute('href'));
-    if (t) { e.preventDefault(); goTo(t); }
-  }));
-  const next = () => {
-    const y = scrollY + 4;
-    const target = scenes.find(s => s.offsetTop > y);
-    if (target) goTo(target); else goTo(0);
-  };
-  $('cta-next').addEventListener('click', next);
-  $('cta-dot').addEventListener('click', next);
-
-  const set = (el, tf, op) => { el.style.transform = tf; if (op !== undefined) el.style.opacity = op; };
-  const fmtTime = m => `T+${Math.floor(m/60)}:${String(Math.floor(m%60)).padStart(2,'0')}`;
-
-
-
-  // ---------- living airport behind the window (image coordinates, 1024 x 1024) ----------
-  const view = $('view'), vctx = view.getContext('2d');
-  const LIGHTS = [[548,540,"b"],[583,540,"b"],[555,546,"b"],[592,550,"b"],[704,551,"b"],[696,554,"b"],[660,555,"b"],[412,556,"b"],[600,556,"b"],[627,556,"b"],[683,556,"b"],[323,557,"b"],[389,557,"b"],[569,557,"b"],[363,558,"b"],[501,558,"b"],[469,559,"b"],[533,559,"b"],[401,560,"b"],[553,560,"b"],[635,564,"b"],[671,564,"b"],[601,565,"b"],[706,565,"b"],[384,567,"b"],[738,569,"b"],[563,580,"b"],[312,487,"w"],[343,493,"w"],[375,497,"w"],[391,499,"w"],[287,500,"w"],[306,500,"w"],[439,501,"w"],[446,503,"w"],[306,510,"w"],[317,510,"w"],[322,510,"w"],[496,510,"a"],[297,511,"w"],[352,511,"a"],[362,511,"a"],[380,511,"w"],[369,512,"w"],[724,512,"a"],[753,512,"w"],[732,514,"a"],[437,517,"w"],[397,518,"w"],[427,518,"w"],[328,519,"w"],[387,519,"w"],[475,520,"w"],[498,520,"a"],[509,521,"w"],[373,522,"w"],[401,522,"w"],[408,522,"w"],[575,522,"a"],[581,522,"a"],[391,524,"w"],[591,524,"a"],[298,525,"w"],[598,525,"a"],[610,527,"a"],[617,528,"a"],[576,529,"a"],[636,531,"a"],[667,531,"a"],[677,532,"w"],[350,533,"w"],[597,534,"a"],[691,534,"a"],[663,535,"a"],[671,536,"w"],[709,536,"a"],[632,537,"w"],[678,537,"a"],[687,539,"a"],[733,539,"a"],[696,540,"a"],[706,542,"a"],[762,542,"w"],[716,543,"a"],[613,544,"a"],[665,544,"a"],[726,545,"a"],[739,546,"a"],[752,548,"a"],[766,551,"w"]]
-    .map(([x, y, k]) => ({ x, y, k, p1: Math.random() * 6.28, p2: Math.random() * 6.28, w1: 1.5 + Math.random() * 3, w2: 4 + Math.random() * 7 }));
-  const sprite = (rgb) => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d');
-    const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
-    gr.addColorStop(0, `rgba(255,255,255,1)`); gr.addColorStop(.12, `rgba(${rgb},.95)`); gr.addColorStop(.4, `rgba(${rgb},.28)`); gr.addColorStop(1, `rgba(${rgb},0)`);
-    g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return c; };
-  const SPR = { b: sprite('70,140,255'), a: sprite('255,170,70'), w: sprite('255,236,200'), r: sprite('255,40,40'), g: sprite('60,255,140'), s: sprite('235,245,255') };
-  const glow = (k, x, y, r, al) => { if (al <= 0.01) return; vctx.globalAlpha = Math.min(1, al); vctx.drawImage(SPR[k], x - r, y - r, r * 2, r * 2); };
-  const strobe = (t, period, off = 0) => { const ph = ((t + off) % period); return (ph < .06 || (ph > .16 && ph < .22)) ? 1 : 0; };
-  const blink = (t, period, on = .12, off = 0) => (((t + off) % period) < on ? 1 : 0);
-  const beacon = (t, f, off = 0) => Math.pow(Math.max(0, Math.cos(6.283 * (t * f + off))), 6);
-  const lerpP = (a, b, k) => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];
-  // generic airliner side silhouette, 100 units long, nose to the right
-  const JET = new Path2D('M0 6C0 3.2 3 2 9 2L88 2C95 2 100 4.6 100 6.4 100 8 96 9 90 9L8 9C3 9 0 8 0 6Z M3 2.5L9 -11 16 -11 22 2.5Z M38 7.2L62 7.2 55 9.6 41 9.6Z M45 8.6h13a2 2 0 0 1 0 4h-13a2 2 0 0 1 0-4Z M86.5 9h1.4v4h-1.4Z M47 9h1.6v4h-1.6Z');
-  function drawJet(x, y, len, t, dir = 1) {
-    const s = len / 100;
-    vctx.save(); vctx.translate(x, y); vctx.scale(s * dir, s * 1.45);
-    vctx.globalAlpha = .93; vctx.globalCompositeOperation = 'source-over'; vctx.fillStyle = '#0d1119'; vctx.fill(JET);
-    vctx.fillStyle = 'rgba(255,214,150,.55)'; for (let i = 14; i < 86; i += 3.2) vctx.fillRect(i, 4.2, 1.1, 1.2);   // lit cabin windows
-    vctx.restore();
-    vctx.globalCompositeOperation = 'lighter';
-    const P = (u, v) => [x + u * s * dir, y + v * s * 1.45];
-    let q = P(99, 7.5); glow('s', q[0], q[1], 6, .9); glow('w', q[0] + 10 * dir, q[1] + 4, 14, .18);        // taxi light and its pool on the ground
-    q = P(50, 1.2); glow('r', q[0], q[1], 5, beacon(t, .9) * 1.1);                                          // red beacon
-    q = P(1, 5.5); glow('s', q[0], q[1], 7, strobe(t, 1.3, .4));                                           // tail strobe
-    q = P(56, 8.5); glow('r', q[0], q[1], 3.5, .8);                                                        // nav light
-  }
-  function sizeView() { const w = view.offsetWidth; const d = Math.min(devicePixelRatio || 1, 2) * 1.6; view.width = Math.min(2400, Math.round(w * d)); view.height = view.width; }
-  sizeView(); addEventListener('resize', sizeView);
-  let viewOn = true, mx = .5;
-  addEventListener('pointermove', e => { mx = e.clientX / innerWidth; });
-  function drawView(ms) {
-    const t = RM ? 3 : ms / 1000;
-    const k = view.width / 1024;
-    vctx.setTransform(1, 0, 0, 1, 0, 0); vctx.clearRect(0, 0, view.width, view.height);
-    vctx.setTransform(k, 0, 0, k, 0, 0);
-    vctx.save();
-    // clip to the glass opening
-    const L = 257, T = 349, R = 768, B = 842, rad = 150;
-    vctx.beginPath(); vctx.moveTo(L, T); vctx.lineTo(R, T); vctx.lineTo(R, B - rad); vctx.quadraticCurveTo(R, B, R - rad, B); vctx.lineTo(L + rad, B); vctx.quadraticCurveTo(L, B, L, B - rad); vctx.closePath(); vctx.clip();
-    // drifting cloud shadows in the dusk sky
-    vctx.globalCompositeOperation = 'source-over';
-    for (const [y0, w, sp, off, al] of [[392, 300, 4, 0, .16], [430, 360, 2.6, 380, .12], [462, 260, 6, 700, .1]]) {
-      const x = L - w + ((t * sp + off) % (R - L + 2 * w));
-      const g = vctx.createRadialGradient(x, y0, 0, x, y0, w / 2);
-      g.addColorStop(0, `rgba(18,22,40,${al})`); g.addColorStop(1, 'rgba(18,22,40,0)');
-      vctx.save(); vctx.translate(x, y0); vctx.scale(1, .16); vctx.translate(-x, -y0); vctx.fillStyle = g; vctx.fillRect(x - w / 2, y0 - w / 2, w, w); vctx.restore();
-    }
-    vctx.globalCompositeOperation = 'lighter';
-    // airfield lights: scintillation in the evening air
-    for (const l of LIGHTS) {
-      const f = .5 + .5 * Math.sin(t * l.w1 + l.p1) * Math.sin(t * l.w2 + l.p2);
-      const base = l.k === 'b' ? .55 : l.k === 'a' ? .5 : .38;
-      glow(l.k, l.x, l.y, l.k === 'w' ? 5 : 6, base * (.55 + .7 * f));
-    }
-    // approach lights: the sequenced flash runs towards the runway twice a second
-    const A0 = [766, 551], A1 = [575, 522], n = 12, ph = (t * 2) % 1;
-    for (let i = 0; i < n; i++) { const d = Math.abs(ph - i / n); if (d < .05) { const q = lerpP(A0, A1, i / n); glow('s', q[0], q[1], 9 - i * .4, (1 - d / .05) * 1.1); } }
-    // aircraft on final approach, landing lights on
-    { const cyc = 30, u = ((t + 6) % cyc) / 22;
-      if (u < 1) { const q = lerpP([800, 405], [664, 517], u); const vis = Math.min(1, u * 6) * (1 - Math.max(0, (u - .92) / .08));
-        glow('s', q[0], q[1], 10 + u * 6, .95 * vis); glow('w', q[0], q[1], 26 + u * 10, .22 * vis);
-        glow('r', q[0] - 4, q[1] - 2, 4, beacon(t, .9) * vis); glow('s', q[0] + 6, q[1] - 1, 6, strobe(t, 1.2) * vis); } }
-    // high traffic crossing the sky
-    { const u = (t % 70) / 70, q = lerpP([250, 372], [790, 356], u);
-      glow('r', q[0], q[1], 3, blink(t, 1.1, .14) + .15); glow('s', q[0] + 2, q[1], 4, strobe(t, 1.5, .7)); }
-    // a jet taxiing along the far taxiway
-    { const cyc = 46, u = (t % cyc) / 38;
-      if (u < 1) { const x = 230 + u * 600; vctx.globalCompositeOperation = 'source-over'; drawJet(x, 532, 72, t); } }
-    vctx.globalCompositeOperation = 'lighter';
-    // the parked jet on the left: red wingtip light and white strobe
-    glow('r', 437.5, 566, 7, .75 + .15 * Math.sin(t * 2)); glow('s', 439, 565, 12, strobe(t, 1.4, .2) * 1.2);
-    // amber beacons turning on the ground vehicles
-    glow('a', 465, 593, 8, beacon(t, .75)); glow('a', 362, 594, 7, beacon(t, .62, .3)); glow('a', 588, 596, 6, beacon(t, .8, .6));
-    // a reflection sliding over the glass, following the pointer a little
-    vctx.globalCompositeOperation = 'source-over'; vctx.globalAlpha = 1;
-    const rx = L + (R - L) * (.15 + .7 * (.5 + .5 * Math.sin(t * .08))) + (mx - .5) * 60;
-    const rg = vctx.createLinearGradient(rx - 120, T, rx + 120, B);
-    rg.addColorStop(0, 'rgba(255,255,255,0)'); rg.addColorStop(.5, 'rgba(255,255,255,.07)'); rg.addColorStop(1, 'rgba(255,255,255,0)');
-    vctx.fillStyle = rg; vctx.fillRect(L, T, R - L, B - T);
-    vctx.restore();
-  }
-
-  let last = -1, lastP = null, dirty = true;
-  function update() {
-    const y = scrollY;
-    if (y === last) return; last = y;
-    const vh = innerHeight;
-    const P = {}; scenes.forEach(s => P[s.id] = progressOf(s));
-    lastP = P; dirty = true;
-
-    // ---- 1 boarding
-    { const p = P.boarding;
-      const open = ease(seg(p, .03, .22));
-      const sh = $('shade');
-      sh.style.transform = `translateY(${-open * 87.74}%)`;
-      sh.style.opacity = 1 - seg(p, .215, .228);
-      $('shade-edge').style.opacity = 1 - open;
-      const z = ease(seg(p, .3, .95));
-      const s = RM ? 1 : 1 + Math.pow(z, 2) * 3.6;
-      set($('window'), `translate(-50%,-59%) scale(${s})`);
-      const apart = ease(seg(p, .24, .66));
-      set($('london'), `translateX(${-apart*55}vw)`, 1 - seg(p, .42, .66));
-      set($('newyork'), `translateX(${apart*55}vw)`, 1 - seg(p, .42, .66));
-      $('london').style.filter = $('newyork').style.filter = `blur(${apart*6}px)`;
-      $('intro').style.opacity = $('scrollhint').style.opacity = 1 - seg(p, .2, .3);
-      const f = seg(p, .3, .4) * (1 - seg(p, .6, .7));
-      set($('factchip'), `translateY(${(1 - seg(p, .3, .4))*30}px)`, f);
-      $('veil').style.opacity = seg(p, .78, .98);
-      viewOn = p < 1 && $('boarding').getBoundingClientRect().bottom > 0;
-    }
-    // ---- 1b cabin tour (the 3D camera and hotspots are driven in concorde3d.js)
-    { const p = P.cabin;
-      const STOPS = [[.04,.16],[.19,.31],[.34,.46],[.50,.64],[.84,.99]];
-      const w = ([a, b]) => seg(p, a - .03, a) * (1 - seg(p, b, b + .03));
-      $('cab-intro').style.opacity = 1 - seg(p, .015, .05);
-      document.querySelectorAll('#cabin .tourcard').forEach((c, i) => {
-        const o = w(STOPS[i]); c.style.opacity = o; c.style.transform = `translateY(${(1 - o) * 16}px)`;
-      });
-    }
-    // ---- 2 droop    // ---- 2 droop
-    { const p = P.droop;
-      const angle = p < .42 ? lerp(0, 5, ease(seg(p, .1, .36))) : lerp(5, 12.5, ease(seg(p, .62, .88)));
-      $('readout').textContent = angle.toFixed(1) + '°';
-      const landing = angle > 9;
-      $('fact-state').textContent = angle < 4.9 ? 'Nose lowering' : landing ? 'Landing position' : 'Take-off position';
-      const txt = landing
-        ? 'For landing it drops further, to 12.5 degrees. The delta wing needs a nose-high attitude, so the droop lets the pilots see past the long nose.'
-        : 'Before take-off the long nose is lowered 5 degrees, so the pilots can see past it.';
-      if ($('fact-text').textContent !== txt) $('fact-text').textContent = txt;
-    }
-    // ---- 3 boom
-    { const p = P.boom;
-      set($('boom-photo'), RM ? 'none' : `scale(${1.18 - p*.16}) translateY(${p*-3}%)`);
-      const n = pw.length, r = seg(p, .05, .78) * (n + 1), rg = seg(p, .12, .9) * (n + 1);
-      pw.forEach((w, i) => w.style.opacity = (.16 + .84 * clamp(r - i)).toFixed(3));
-      gw.forEach((w, i) => w.style.opacity = (.22 * clamp(rg - i) * (1 - seg(p, .85, 1))).toFixed(3));
-      $('mach-big').textContent = lerp(.95, 1.7, ease(seg(p, .1, .9))).toFixed(2);
-    }
-    // ---- 4 mach 2 plane
-    { const p = P.mach2;
-      const grow = ease(seg(p, .5, .95)), spread = ease(seg(p, .15, .6));
-      set($('flyat'), `translateX(${-spread*3 - grow*4}vw)`);
-      set($('machtwo'), `translateX(${spread*3 + grow*4}vw)`);
-      const info = seg(p, .12, .3) * (1 - seg(p, .62, .78));
-      $('sidecopy').style.opacity = $('spec').style.opacity = info;
-    }
-    // ---- 5 cruise
-    { const p = P.cruise;
-      set($('earth'), RM ? 'none' : `translateY(${(1 - ease(seg(p, 0, .7))) * 22}vh) scale(${1.12 - p*.1})`);
-      const a = 1 - seg(p, .42, .55), h = seg(p, .55, .68);
-      set($('alt-block'), `translateY(${-(1-a)*30}px)`, a);
-      set($('heat-block'), `translateY(${(1-h)*30}px)`, h);
-      $('temp').textContent = Math.round(lerp(20, 127, ease(seg(p, .55, .85)))) + '°C';
-      $('stretch-bar').style.transform = `scaleX(${1 + .06 * ease(seg(p, .7, .95))})`;
-    }
-    // ---- 6 arrival
-    { const p = P.arrival;
-      const enter = ease(seg(p, 0, .35));
-      set($('globe'), `translate(${lerp(25, -50, enter)}%, -50%) rotate(${lerp(-8, 0, enter)}deg)`);
-      set($('bigword'), `translateX(${-p*8}vw)`, .5 + .5*seg(p, 0, .3));
-      const draw = ease(seg(p, .3, .7));
-      $('arc').setAttribute('stroke-dashoffset', (1 - draw).toFixed(4));
-      $('jfk-dot').setAttribute('opacity', seg(draw, .9, 1));
-      $('jfk-label').setAttribute('opacity', seg(draw, .9, 1));
-      const t = ease(seg(p, .35, .6)), out = seg(p, .82, .97);
-      set($('ticket'), `translateY(${(1 - t) * 110 - out*40}vh) rotate(${lerp(10, -4, t)}deg)`, 1 - out);
-      $('landing').style.opacity = seg(p, .62, .75);
-    }
-
-    // ---- HUD + stage bar
-    const k = [P.boarding, P.droop, P.boom, P.mach2, P.cruise, P.arrival];
-    let alt = 0, mach = 0;
-    if (k[1] > 0) { alt = lerp(0, 2000, seg(k[1], .6, 1)); mach = lerp(0, .4, k[1]); }
-    if (k[2] > 0) { alt = lerp(2000, 50000, k[2]); mach = lerp(.95, 1.7, ease(seg(k[2], .1, .9))); }
-    if (k[3] > 0) { alt = lerp(50000, 60000, k[3]); mach = lerp(1.7, 2, k[3]); }
-    if (k[4] > 0) { alt = 60000; mach = 2; }
-    if (k[5] > 0) { alt = lerp(60000, 0, k[5]); mach = lerp(2, 0, k[5]); }
-    const k2 = [P.boarding, P.cabin, P.droop, P.boom, P.mach2, P.cruise, P.arrival];
-    const total = k2.reduce((s, v) => s + v, 0) / 7;
-    $('hud-alt').textContent = (Math.round(alt / 100) * 100).toLocaleString('en-GB') + ' ft';
-    $('hud-mach').textContent = mach.toFixed(2);
-    $('hud-time').textContent = fmtTime(total * 210);
-    let idx = k2.findIndex(v => v < 1); if (idx === -1) idx = 6;
-    const names = ['Boarding','Cabin','Take-off','Supersonic','Mach 2','Cruise','Arrival'];
-    $('stage-name').textContent = names[idx];
-    $('stage-num').textContent = `${idx + 1} / 7`;
-    $('stage-fill').style.width = (total * 100).toFixed(1) + '%';
-    const atEnd = $('end').getBoundingClientRect().top < vh * .5;
-    $('cta-next').textContent = atEnd ? 'Replay the flight' : (y < 10 ? 'Begin the flight' : 'Next scene');
-  }
-
-  function frame(t) {
-    if (lenis) lenis.raf(t);
-    update();
-    if (viewOn && !RM) drawView(t);
-    if (window.C3D && lastP && (dirty || C3D.animating())) { C3D.update(lastP, t); dirty = false; }
-    requestAnimationFrame(frame);
-  }
-  requestAnimationFrame(frame);
-  addEventListener('resize', () => { last = -1; if (window.C3D) C3D.resize(); });
-  update();
-  drawView(0);
-})();
-</script>
+<script src="js/site.js"></script>
 </body>
 </html>
