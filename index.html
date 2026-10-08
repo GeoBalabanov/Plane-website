@@ -20,6 +20,49 @@
   <div class="in"><span class="mark">Concorde</span><span class="label muted">London Heathrow to New York JFK</span></div>
 </div>
 
+<!-- 0. Check-in: the visitor fills in their own boarding pass -->
+<div class="checkin" id="checkin" role="dialog" aria-modal="true" aria-labelledby="ck-title" aria-describedby="ck-help">
+  <div class="ck-glow" aria-hidden="true"></div>
+  <p class="ck-kicker label" id="ck-help">Check-in · Fill in your boarding pass</p>
+  <form class="pass" id="pass" autocomplete="off" novalidate>
+    <div class="pass-main">
+      <div class="pass-head label"><span>Boarding pass</span><span class="muted">Concorde · BA001</span></div>
+      <h2 class="pass-title" id="ck-title"><span>London</span><i aria-hidden="true">→</i><span>New York</span></h2>
+      <div class="pass-route label muted"><span>LHR · Heathrow</span><span>JFK · New York</span></div>
+      <div class="pass-grid">
+        <label class="field f-name"><span class="label muted">Passenger</span><input id="ck-name" name="name" maxlength="22" placeholder="Write your name" spellcheck="false"></label>
+        <div class="field"><span class="label muted">Flight</span><b>BA001</b></div>
+        <div class="field"><span class="label muted">Date</span><b id="ck-date">Today</b></div>
+        <div class="field"><span class="label muted">Seat</span><b id="ck-seat">1A</b></div>
+      </div>
+      <fieldset class="seatmap">
+        <legend class="label muted">Choose your seat <span class="hint">Two seats, the aisle, two seats</span></legend>
+        <div class="seats-scroll"><div class="seats" id="seats"></div></div>
+        <div class="seat-key label muted" aria-hidden="true"><span>Nose</span><span>Tail</span></div>
+      </fieldset>
+    </div>
+    <div class="pass-stub" id="stub" aria-hidden="true">
+      <span class="label muted">Seat</span><b class="stub-seat" id="stub-seat">1A</b>
+      <span class="label muted">Passenger</span><b class="stub-name" id="stub-name">Passenger</b>
+      <i class="barcode-v"></i>
+    </div>
+    <svg class="stamp" id="stamp" viewBox="0 0 160 160" aria-hidden="true">
+      <circle cx="80" cy="80" r="74" fill="none" stroke="currentColor" stroke-width="4"/>
+      <circle cx="80" cy="80" r="64" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      <text x="80" y="88" text-anchor="middle" font-family="Archivo, sans-serif" font-weight="700" font-size="25" letter-spacing="2" fill="currentColor">BOARDED</text>
+      <text x="80" y="112" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" letter-spacing="2" fill="currentColor">LHR · BA001</text>
+      <text x="80" y="58" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" letter-spacing="2" fill="currentColor" id="stamp-date">TODAY</text>
+    </svg>
+  </form>
+  <div class="ck-actions">
+    <button class="ck-board" type="submit" form="pass">Board the flight
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2.5 13.2l7.3-1.6 4.8-8.1c.4-.6 1.4-.4 1.4.4l-.6 7.1 5.6 1c.9.2.9 1.4 0 1.6l-5.6 1 .6 7.1c0 .8-1 1-1.4.4l-4.8-8.1-7.3-1.6c-.5-.1-.5-.9 0-1z" fill="currentColor" transform="rotate(-45 12 12)"/></svg>
+    </button>
+    <button class="ck-skip label" type="button" id="ck-skip">Skip check-in</button>
+  </div>
+  <p class="ck-note label muted">Your name stays on this page. It is not saved or sent anywhere.</p>
+</div>
+
 <header class="nav">
   <nav aria-label="Scenes">
     <ul>
@@ -59,7 +102,7 @@
       <div class="window will" id="window"><img src="assets/window.webp" alt="A small oval cabin window looking out at the airport at dusk, runway lights glowing" width="1024" height="1024"><canvas id="view" aria-hidden="true"></canvas><div class="shade-clip" aria-hidden="true"><div class="shade-panel" id="shade"><i class="shade-shadow"></i></div><div class="shade-edge" id="shade-edge"></div></div></div>
       <p class="h-split d1 will" id="newyork" aria-hidden="true" data-reveal>New York</p>
       <div class="intro will" id="intro">
-        <p class="sub rise" style="--d:500">Seat 1A,<br>by the window</p>
+        <p class="sub rise" style="--d:500" id="intro-seat">Seat 1A,<br>by the window</p>
         <span class="rule rise" style="--d:600"></span>
         <p class="copy rise" style="--d:700">A virtual Concorde flight from London Heathrow to New York JFK. About 3.5 hours. Scroll to open your window shade.</p>
       </div>
@@ -198,7 +241,7 @@
           <span class="t-big">3.5 h</span>
           <span class="label" style="align-self:start">London to New York</span>
           <div class="route sub"><span>LHR</span><i>→</i><span>JFK</span></div>
-          <p class="copy">About 3.5 hours instead of 7 or more. Seat 1A.</p>
+          <p class="copy" id="arr-seat">About 3.5 hours instead of 7 or more. Seat 1A.</p>
           <i class="barcode" aria-hidden="true"></i>
         </div>
         <div class="landing will" id="landing">
@@ -218,6 +261,7 @@
     <section id="end" data-name="24.10.2003">
       <span class="label kicker rise"><i class="pip"></i>The last British Airways commercial Concorde flight</span>
       <h2 class="date d1" data-reveal>24.10.2003</h2>
+      <p class="thanks sub rise" id="thanks" hidden></p>
       <div class="cols">
         <div class="rise" style="--d:300"><p class="sub"><strong>For 27 years you could cross the Atlantic in about 3.5 hours.</strong> Then it stopped, and the trip went back to 7 hours or more.</p></div>
         <div class="q rise" style="--d:450"><span class="rule"></span><p class="sub">Would you give up comfort, money or quiet skies to fly this fast again?</p></div>
@@ -238,6 +282,7 @@
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js"></script>
 <script src="js/site.js"></script>
+<script src="js/checkin.js"></script>
 <!-- the droop nose scene is an ES module: it needs the loaders and post-processing that three ships only as modules -->
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.149.0/examples/jsm/"}}</script>
 <script type="module" src="js/droop3d.js"></script>
