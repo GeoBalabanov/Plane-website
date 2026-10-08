@@ -75,7 +75,7 @@ function start() {
   groundMat.onBeforeCompile = sh => {
     Object.assign(sh.uniforms, U, { tAsph: { value: tAsph }, tRough: { value: tRough }, tGrass: { value: tGrass } });
     sh.vertexShader = 'varying vec3 vW;\n' + sh.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>\n  vW = (modelMatrix * vec4(transformed, 1.)).xyz;');
-    sh.fragmentShader = 'varying vec3 vW; uniform sampler2D tAsph, tRough, tGrass; uniform float dist; float paved, rubber;\n' + SKY + `
+    sh.fragmentShader = 'varying vec3 vW; uniform sampler2D tAsph, tRough, tGrass; uniform float dist, time; float paved, rubber;\n' + SKY + `
       float band(float v, float a, float b){ float f = fwidth(v) * .75; return smoothstep(a - f, a + f, v) - smoothstep(b - f, b + f, v); }
       vec3 lin(vec3 c){ return pow(c, vec3(2.2)); }
     ` + sh.fragmentShader
@@ -86,6 +86,8 @@ function start() {
         // grass: the photo at two scales so it never repeats, mown in stripes along the runway, then fields
         vec3 grass = lin(texture2D(tGrass, g / 16.).rgb) * lin(texture2D(tGrass, g / 131. + .37).rgb) * 3.2 * vec3(.78, 1., .62);
         grass *= 1. + .08 * sign(sin(x * .13)) * fade * step(ax, 320.);
+        float gust = noise((g + vec2(-1.1, -1.6) * time * 9.) * .018) * .6 + noise((g + vec2(-1.4, -1.) * time * 14.) * .05) * .4;
+        grass *= .9 + .2 * gust;                                 // gusts rolling over the grass as light and dark waves
         vec2 cell = floor((g + vec2(9000., 3000.)) / vec2(420., 300.)), fc = fract((g + vec2(9000., 3000.)) / vec2(420., 300.));
         float h = hash(cell), edge = min(min(fc.x, 1. - fc.x) * 420., min(fc.y, 1. - fc.y) * 300.);
         vec3 field = grass * (h < .3 ? vec3(1.35, 1.05, .7) : h < .55 ? vec3(.7, .85, .6) : h < .8 ? vec3(1.1, 1., .75) : vec3(.9, .75, .6));
@@ -120,6 +122,80 @@ function start() {
   };
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(60000, 60000).rotateX(-Math.PI / 2), groundMat);
   ground.receiveShadow = true; ground.renderOrder = -9; ground.frustumCulled = false; scene.add(ground);
+
+  /* ---------- real grass: blades that sway in the wind, a 56 m patch that follows the camera across the field. Each blade
+     keeps its own place on the ground (the patch wraps, it does not slide), stays off the tarmac and thins out at the edge
+     of the patch, where the photographed grass below takes over. ---------- */
+  const GT = 56, BLADES = matchMedia('(max-width: 720px)').matches ? 45000 : 120000;
+  const grassGeo = new THREE.InstancedBufferGeometry();
+  {
+    // two tapered blades per tuft, crossed, each in four segments so it can bend
+    const pos = [], idx = [], seg = 4;
+    for (let b = 0; b < 2; b++) {
+      const a = b * Math.PI / 2 + .3, c = Math.cos(a), s = Math.sin(a), base = pos.length / 3;
+      for (let i = 0; i <= seg; i++) { const y = i / seg, w = .5 * (1 - y * .92); pos.push(-w * c, y, -w * s, w * c, y, w * s); }
+      for (let i = 0; i < seg; i++) { const k = base + i * 2; idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); }
+    }
+    grassGeo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); grassGeo.setIndex(idx);
+    const off = new Float32Array(BLADES * 2), shape = new Float32Array(BLADES * 4);
+    for (let i = 0; i < BLADES; i++) {
+      off[i * 2] = Math.random() * GT; off[i * 2 + 1] = Math.random() * GT;
+      shape[i * 4] = .07 + Math.pow(Math.random(), 2.2) * .26;        // height, m: mown airfield grass, a few tall stems
+      shape[i * 4 + 1] = .007 + Math.random() * .012;                  // width, m
+      shape[i * 4 + 2] = Math.random() * 6.283;                        // turn
+      shape[i * 4 + 3] = Math.random();                                // colour and stiffness
+    }
+    grassGeo.setAttribute('off', new THREE.InstancedBufferAttribute(off, 2));
+    grassGeo.setAttribute('shape', new THREE.InstancedBufferAttribute(shape, 4));
+    grassGeo.instanceCount = BLADES;
+  }
+  const grassU = Object.assign({}, U, { focus: { value: new THREE.Vector2() }, show: { value: 1 } });
+  const grass = new THREE.Mesh(grassGeo, new THREE.ShaderMaterial({ uniforms: grassU, side: THREE.DoubleSide,
+    vertexShader: `uniform float dist, time, show; uniform vec2 focus; uniform vec3 sunDir;
+      attribute vec2 off; attribute vec4 shape; varying float vH, vTone, vLit, vFog; varying vec3 vW;
+      float h1(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+      float n2(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f);
+        return mix(mix(h1(i), h1(i + vec2(1, 0)), f.x), mix(h1(i + vec2(0, 1)), h1(i + vec2(1)), f.x), f.y); }
+      float band(float v, float a, float b){ return step(a, v) * step(v, b); }
+      void main(){
+        // the nearest copy of this blade to the focus, in runway coordinates (z along the runway)
+        vec2 w = focus + mod(off - focus + ${GT / 2}., ${GT}.) - ${GT / 2}.;
+        float ax = abs(w.x), z = w.y;
+        float paved = band(z, -305., 3905.) * band(ax, 0., 31.) + band(z, -905., 4505.) * band(w.x, 166., 194.);
+        for (int i = 0; i < 4; i++){ float c = 600. + float(i) * 900.; paved += band(z, c - 13., c + 13.) * band(w.x, 18., 182.); }
+        float edge = 1. - smoothstep(${(GT * .3).toFixed(1)}, ${(GT * .5).toFixed(1)}, length(w - focus));
+        float keep = (1. - min(paved, 1.)) * edge * show;
+        float h = shape.x * keep * (.75 + .5 * n2(w * .35)), wd = shape.y, a = shape.z;
+        vec3 p = position; float y = p.y;
+        p.xz *= wd * 2.; p.y *= h;
+        p.xz = mat2(cos(a), -sin(a), sin(a), cos(a)) * p.xz;
+        // wind: a steady lean, slow gusts that roll across the field, and a quick flutter at the tips
+        vec2 wdir = normalize(vec2(1.1, 1.6));
+        float gust = n2((w + wdir * time * 9.) * .018) * .6 + n2((w + wdir * time * 14.) * .05) * .4;
+        float sway = .18 + gust * .55 + sin(time * 2.3 + dot(w, vec2(.7, .4)) + shape.w * 6.) * .08 + sin(time * 5.1 + shape.w * 17.) * .025;
+        float bend = y * y * sway * h * (1.3 - shape.w * .5);
+        p.xz += wdir * bend; p.y -= bend * bend * .4 / max(h, .01);
+        vec3 world = vec3(w.x + p.x, p.y, w.y - dist + p.z);
+        vH = y; vTone = shape.w; vW = world;
+        // light: the sun through the blade from behind, on its face from the front
+        vec3 n = normalize(vec3(-sin(a), .35, cos(a)));
+        vLit = abs(dot(n, sunDir)) * .7 + .3 + gust * .15;
+        vec4 mv = modelViewMatrix * vec4(world, 1.);
+        vFog = 1. - exp(-length(mv.xyz) / 6500.);
+        gl_Position = projectionMatrix * mv;
+      }`,
+    fragmentShader: SKY + `varying float vH, vTone, vLit, vFog; varying vec3 vW;
+      void main(){
+        // olive at the root, sun-dried straw at some tips, like late-summer airfield grass
+        vec3 root = vec3(.028, .03, .012), mid = mix(vec3(.07, .078, .03), vec3(.1, .088, .04), vTone);
+        vec3 tip = mix(vec3(.13, .125, .055), vec3(.24, .19, .095), smoothstep(.45, 1., vTone));
+        vec3 c = vH < .5 ? mix(root, mid, vH * 2.) : mix(mid, tip, (vH - .5) * 2.);
+        c *= vec3(1.25, 1.08, .92) * (.45 + vLit * .6);
+        vec3 v = vW - cameraPosition;
+        c = mix(c, sky(vec3(v.x, length(v.xz) * .012, v.z)) * .92, vFog);
+        gl_FragColor = vec4(c, 1.);
+      }` }));
+  grass.frustumCulled = false; grass.renderOrder = -8; scene.add(grass);
 
   /* ---------- airfield lights: points that the runway carries past the aircraft ---------- */
   const lights = { p: [], c: [], s: [] };
@@ -335,6 +411,7 @@ function start() {
   const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(2, 2, { type: THREE.HalfFloatType, samples: 4 }));
   composer.addPass(new RenderPass(scene, cam));
   const dof = new BokehPass(scene, cam, { focus: 60, aperture: .00012, maxblur: .0065 }); composer.addPass(dof);   // a long lens: soft sky, soft foreground
+  { const r = dof.render.bind(dof); dof.render = (...a) => { const v = grass.visible; grass.visible = false; r(...a); grass.visible = v; }; }   // its depth pass cannot follow the blades: the ground beneath stands in
   const air = new ShaderPass({
     uniforms: { tDiffuse: { value: null }, speed: { value: 0 }, cloud: { value: 0 }, time: U.time, centre: { value: new THREE.Vector2(.5, .5) } },
     vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }',
@@ -458,6 +535,8 @@ function start() {
       if (!RM) { const t = ms / 1000, k = S.reheat * (S.alt < 1 ? .06 : .012) * (.3 + S.mach * 2.4);
         shake.set(Math.sin(t * 37) * Math.sin(t * 13), Math.sin(t * 41 + 1) * Math.sin(t * 17), 0).multiplyScalar(k); cam.position.add(shake); }
       cam.lookAt(target);
+      { const f = new THREE.Vector3(); cam.getWorldDirection(f); f.y = 0; f.normalize().multiplyScalar(GT * .3);
+        grassU.focus.value.set(cam.position.x + f.x, cam.position.z + f.z + S.dist); grass.visible = cam.position.y < 40; }
       sun.target.position.set(0, S.alt, 0); sun.position.copy(sunDir).multiplyScalar(150).add(sun.target.position);
       dof.uniforms.focus.value = cam.position.distanceTo(target);
       if (cam.fov !== S.fov) { cam.fov = S.fov; cam.updateProjectionMatrix(); }
