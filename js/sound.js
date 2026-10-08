@@ -2,7 +2,8 @@
    - the cabin: a low hum with the whine of the turbines far back,
    - the engines: deep rumbling noise whose loudness and brightness follow the flight (idle, take-off roll with
      reheat, climb, the smooth roar of the cruise, quiet at the gate),
-   - the sonic boom: the double crack of an N-wave and its rumble, when the clouds scene passes Mach 1. */
+   - the sonic boom: the double crack of an N-wave and its rumble, when the clouds scene passes Mach 1,
+   - footsteps in the cabin: real carpet recordings (Kenney, CC0), the only sound files. */
 (() => {
   const btn = document.getElementById('sound'); if (!btn) return;
   const AC = window.AudioContext || window.webkitAudioContext; if (!AC) { btn.hidden = true; return; }
@@ -53,20 +54,24 @@
   }
   addEventListener('concorde:boom', boom);
 
-  // footsteps on the cabin carpet: a soft heel thud and the brush of a sole, never twice the same
-  let noise = null;
+  // footsteps on the cabin carpet: five real recordings ("Impact Sounds" by Kenney, CC0), a different one each time,
+  // with a touch of pitch and level so no two steps sound the same
+  const steps = []; let lastStep = -1, loading = null;
+  const loadSteps = () => loading || (loading = Promise.all([0, 1, 2, 3, 4].map(i =>
+    fetch(`assets/sound/step${i}.mp3`).then(r => r.arrayBuffer()).then(b => new Promise((res, rej) => ctx.decodeAudioData(b, res, rej)))
+  )).then(list => steps.push(...list)).catch(e => console.error(e)));
   function step(e) {
     if (!on || !ctx) return;
-    const s = clamp(e.detail && e.detail.strength || .6, .25, 1), t = ctx.currentTime, left = e.detail && e.detail.left;
-    if (!noise) noise = noiseBuffer(1, false);
-    const thud = ctx.createBufferSource(); thud.buffer = noise; thud.playbackRate.value = .8 + Math.random() * .3;
-    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 170 + Math.random() * 60 + (left ? 0 : 25); lp.Q.value = 1.2;
-    const g1 = ctx.createGain(); g1.gain.setValueAtTime(.0001, t); g1.gain.exponentialRampToValueAtTime(1.6 * s, t + .012); g1.gain.exponentialRampToValueAtTime(.0001, t + .16);
-    thud.connect(lp).connect(g1).connect(master); thud.start(t, Math.random() * .8, .2);
-    const brush = ctx.createBufferSource(); brush.buffer = noise;
-    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1300 + Math.random() * 700; bp.Q.value = .7;
-    const g2 = ctx.createGain(); g2.gain.setValueAtTime(.0001, t + .02); g2.gain.exponentialRampToValueAtTime(.09 * s, t + .05); g2.gain.exponentialRampToValueAtTime(.0001, t + .14);
-    brush.connect(bp).connect(g2).connect(master); brush.start(t, Math.random() * .8, .16);
+    if (!steps.length) { loadSteps(); return; }
+    let i; do i = Math.floor(Math.random() * steps.length); while (i === lastStep && steps.length > 1); lastStep = i;
+    const s = clamp(e.detail && e.detail.strength || .6, .35, 1), t = ctx.currentTime;
+    const src = ctx.createBufferSource(); src.buffer = steps[i]; src.playbackRate.value = .92 + Math.random() * .14;
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2600 + Math.random() * 900;   // soft carpet, not a hard floor
+    const g = ctx.createGain(); g.gain.value = (.32 + .18 * s) * (.85 + Math.random() * .3);
+    const pan = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+    let out = src.connect(lp).connect(g);
+    if (pan) { pan.pan.value = (e.detail && e.detail.left ? -.12 : .12); out = out.connect(pan); }
+    out.connect(master); src.start(t);
   }
   addEventListener('concorde:step', step);
 
@@ -92,7 +97,7 @@
   let timer = 0;
   function set(v) {
     on = v;
-    if (on && !ctx) build();
+    if (on && !ctx) { build(); loadSteps(); }
     if (ctx) { if (on) ctx.resume(); master.gain.setTargetAtTime(on ? 1 : 0, ctx.currentTime, .25); }
     btn.setAttribute('aria-pressed', String(on)); btn.querySelector('.sound-t').textContent = on ? 'Sound on' : 'Sound off';
     btn.classList.toggle('on', on);
