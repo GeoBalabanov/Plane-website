@@ -1,6 +1,6 @@
 /* Concorde in Three.js: a procedural model built from the real proportions
    (length 61.66 m, span 25.6 m), a walk-through cabin, and the scroll hooks
-   for three scenes: cabin tour, droop nose, Mach 2 top view.
+   for two scenes: cabin tour and Mach 2 top view. (The droop nose scene is in droop3d.js.)
    Units are metres. Aircraft axes: +x forward (tail at x = 0), +y up, +z right. */
 (() => {
   if (!window.THREE) return;
@@ -150,48 +150,6 @@
       return ang / DEG;
     };
     return { plane, nosePivot, gear, flames, sight, setDroop };
-  }
-
-  /* ---------- scene: droop nose on the runway ---------- */
-  function droopScene(canvas) {
-    const renderer = makeRenderer(canvas), env = studioEnv(renderer);
-    const scene = new T.Scene(); scene.environment = env;
-    scene.fog = new T.Fog(0xe4ded4, 140, 620);
-    const cam = new T.PerspectiveCamera(30, 1, .5, 2000);
-    scene.add(new T.HemisphereLight(0xfffaf2, 0x8f8a80, .45));
-    const sun = new T.DirectionalLight(0xfff1e0, 2.8); sun.position.set(55, 75, 80); sun.castShadow = true;
-    Object.assign(sun.shadow.camera, { left: -60, right: 60, top: 60, bottom: -60, near: 10, far: 300 }); sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -.0004; sun.shadow.normalBias = .03;
-    sun.target.position.set(30, 0, 0); scene.add(sun, sun.target);
-    // runway
-    const ground = new T.Mesh(new T.PlaneGeometry(3000, 3000), new T.MeshStandardMaterial({ color: 0xc9c1b3, roughness: 1 }));
-    ground.rotation.x = -Math.PI / 2; ground.position.y = -.02; ground.receiveShadow = true; scene.add(ground);
-    const rw = new T.Mesh(new T.PlaneGeometry(1400, 45), new T.MeshStandardMaterial({ color: 0x55575b, roughness: .92 }));
-    rw.rotation.x = -Math.PI / 2; rw.receiveShadow = true; scene.add(rw);
-    const paint = new T.MeshStandardMaterial({ color: 0xf4f2ee, roughness: .8 });
-    const dash = new T.InstancedMesh(new T.BoxGeometry(18, .02, .6), paint, 70), mm = new T.Matrix4();
-    for (let i = 0; i < 70; i++) { mm.makeTranslation(-600 + i * 30, .01, 0); dash.setMatrixAt(i, mm); } dash.receiveShadow = true; scene.add(dash);
-    for (const z of [-21.5, 21.5]) { const e = new T.Mesh(new T.BoxGeometry(1400, .02, .45), paint); e.position.set(0, .01, z); e.receiveShadow = true; scene.add(e); }
-
-    const ac = buildConcorde(env); ac.sight.visible = true;
-    const pitch = new T.Group(); pitch.position.set(22.4, 0, 0); scene.add(pitch);  // rotate about the main wheels
-    ac.plane.position.set(-22.4, 4.4, 0); pitch.add(ac.plane);
-
-    const target = new T.Vector3();
-    function update(p) {
-      // nose 0 -> 5 deg, the take-off rotation, then 5 -> 12.5 deg for landing
-      const deg = p < .42 ? lerp(0, 5, ease(seg(p, .1, .36))) : lerp(5, 12.5, ease(seg(p, .62, .88)));
-      ac.setDroop(deg);
-      pitch.rotation.z = 11 * DEG * ease(seg(p, .42, .6));
-      ac.sight.material.opacity = .95 * seg(p, .14, .24);
-      // camera: wide three-quarter view, then glide in beside the nose
-      const c = ease(seg(p, 0, .4));
-      const th = lerp(34, 78, c) * DEG, d = lerp(120, 62, c), h = lerp(18, 3.2, c);
-      target.set(lerp(31, 40, c), lerp(4.5, 6, c) + 3 * ease(seg(p, .42, .6)), 0);
-      cam.position.set(target.x + d * Math.cos(th), target.y + h, d * Math.sin(th));
-      cam.lookAt(target);
-      return deg;
-    }
-    return { renderer, scene, cam, update };
   }
 
   /* ---------- scene: Mach 2 seen from above ---------- */
@@ -441,10 +399,9 @@
     const c = document.getElementById(id); if (!c) return null;
     const s = factory(c); s.canvas = c; s.section = document.getElementById(sectionId); list.push(s); return s;
   }
-  let cabin, droop, mach;
+  let cabin, mach;
   try {
     cabin = add('cabin3d', cabinScene, 'cabin');
-    droop = add('droop3d', droopScene, 'droop');
     mach = add('mach3d', mach2Scene, 'mach2');
   } catch (e) { console.error(e); return; }
 
@@ -473,10 +430,7 @@
           el.style.opacity = on ? ws[i] : 0;
         });
       }
-      let deg = null;
-      if (droop && visible(droop)) { deg = droop.update(P.droop); droop.renderer.render(droop.scene, droop.cam); }
       if (mach && visible(mach)) { mach.update(P.mach2, t); mach.renderer.render(mach.scene, mach.cam); }
-      return deg;
     },
     animating: () => mach && visible(mach),
     resize

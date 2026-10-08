@@ -1,0 +1,14 @@
+{
+  "name": "concorde-tools",
+  "private": true,
+  "type": "module",
+  "description": "Build step for the 3D model: splits the droop nose off the fuselage and compresses the result.",
+  "scripts": { "build": "node build-concorde.mjs" },
+  "dependencies": {
+    "@gltf-transform/core": "^4.1.0",
+    "@gltf-transform/extensions": "^4.1.0",
+    "@gltf-transform/functions": "^4.1.0",
+    "meshoptimizer": "^0.22.0",
+    "sharp": "^0.33.5"
+  }
+}

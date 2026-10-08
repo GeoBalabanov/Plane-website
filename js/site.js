@@ -29,7 +29,7 @@
   // smooth scroll
   let lenis = null;
   if (window.Lenis && !RM) {
-    lenis = new Lenis({ lerp: 0.085, wheelMultiplier: 0.9, smoothWheel: true });
+    lenis = window.lenis = new Lenis({ lerp: 0.085, wheelMultiplier: 0.9, smoothWheel: true });
   }
   const goTo = target => {
     if (lenis) return lenis.scrollTo(target, { duration: 1.6 });
@@ -152,6 +152,19 @@
   const tourcards = [...document.querySelectorAll('#cabin .tourcard')];
   tourcards.forEach((c, i) => c.insertAdjacentHTML('beforeend', '<div class="dots" aria-hidden="true">' + tourcards.map((_, j) => `<i${j === i ? ' class="on"' : ''}></i>`).join('') + '</div>'));
   const ticks = [...$('ticks').children];
+  // droop nose: the readout card and the fact follow the nose angle
+  function noseReadout(angle) {
+    $('readout').textContent = angle.toFixed(1) + '°';
+    const landing = angle > 9;
+    $('fact-state').textContent = angle < .05 ? 'Nose up' : angle < 4.9 ? 'Nose lowering' : landing ? 'Landing position' : 'Take-off position';
+    const txt = landing
+      ? 'For landing it drops further, to 12.5 degrees. The delta wing needs a nose-high attitude, so the droop lets the pilots see past the long nose.'
+      : 'Before take-off the long nose is lowered 5 degrees, so the pilots can see past it.';
+    if ($('fact-text').textContent !== txt) $('fact-text').textContent = txt;
+    const tick = angle < 2.5 ? 0 : landing ? 2 : 1;
+    ticks.forEach((t, i) => t.classList.toggle('on', i === tick));
+  }
+  addEventListener('concorde:nose', e => noseReadout(e.detail));
   let last = -1, lastP = null, dirty = true;
   function update() {
     const y = scrollY;
@@ -209,19 +222,8 @@
         const o = w(STOPS[i]); c.style.opacity = o; c.style.transform = `translateY(${(1 - o) * 16}px)`; c.style.visibility = o > 0 ? 'visible' : 'hidden';
       });
     }
-    // ---- 3 droop
-    { const p = P.droop;
-      const angle = p < .42 ? lerp(0, 5, ease(seg(p, .1, .36))) : lerp(5, 12.5, ease(seg(p, .62, .88)));
-      $('readout').textContent = angle.toFixed(1) + '°';
-      const landing = angle > 9;
-      $('fact-state').textContent = angle < .05 ? 'Nose up' : angle < 4.9 ? 'Nose lowering' : landing ? 'Landing position' : 'Take-off position';
-      const txt = landing
-        ? 'For landing it drops further, to 12.5 degrees. The delta wing needs a nose-high attitude, so the droop lets the pilots see past the long nose.'
-        : 'Before take-off the long nose is lowered 5 degrees, so the pilots can see past it.';
-      if ($('fact-text').textContent !== txt) $('fact-text').textContent = txt;
-      const tick = angle < 2.5 ? 0 : landing ? 2 : 1;
-      ticks.forEach((t, i) => t.classList.toggle('on', i === tick));
-    }
+    // ---- 3 droop: droop3d.js scrubs the nose with GSAP and reports the angle; this is only the fallback without it
+    if (!window.noseDriven) { const p = P.droop; noseReadout(p < .42 ? lerp(0, 5, ease(seg(p, .1, .36))) : lerp(5, 12.5, ease(seg(p, .62, .88)))); }
     // ---- 4 supersonic
     { const p = P.boom;
       set($('boom-photo'), RM ? 'none' : `scale(${1.18 - p*.16}) translateY(${p*-3}%)`);

@@ -171,8 +171,7 @@ body.at-end .hud,body.at-end .stagebar{opacity:0}
 
 /* ---------- 3. take-off: the droop nose ---------- */
 #droop{height:420vh}
-#droop .stage{background:linear-gradient(180deg,#f4f0e9 0%,#ece6dd 52%,#e4ded4 100%);color:var(--ink)}
-#droop .shade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(244,240,233,.72) 0%,rgba(244,240,233,0) 32%,rgba(244,240,233,0) 70%,rgba(228,222,212,.6) 100%)}
+#droop .stage{background:#ebe0d0;color:var(--ink)}
 #droop .kicker{position:absolute;left:var(--gutter);top:13vh}
 #droop-l{left:var(--gutter);top:17vh}
 #droop-r{right:var(--gutter);top:17vh}
@@ -263,6 +262,8 @@ body.at-end .hud,body.at-end .stagebar{opacity:0}
 .credits div{display:grid;gap:14px;justify-items:start}
 .credits .l{max-width:32vw}
 .credits .l p{display:grid;gap:6px}
+.credits a{text-underline-offset:3px}
+.credits a:hover{color:var(--paper)}
 .credits .r{width:min(348px,38vw);text-align:right;justify-items:stretch}
 
 @media (max-aspect-ratio:1/1){

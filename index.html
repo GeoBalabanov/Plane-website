@@ -107,8 +107,7 @@
   <!-- 3. Take-off: the droop nose -->
   <section class="scene" id="droop" data-name="Take-off">
     <div class="stage">
-      <canvas class="gl" id="droop3d" role="img" aria-label="3D Concorde on the runway. As you scroll the nose lowers on its hinge, the plane rotates nose-high and the nose drops further for landing"></canvas>
-      <div class="shade"></div>
+      <canvas class="gl" id="droop3d" role="img" aria-label="A 3D British Airways Concorde in a warm studio. As you scroll, the camera moves in from a wide side view to the nose, which lowers on its hinge to 5 degrees and then to 12.5 degrees"></canvas>
       <span class="label kicker rise">Take-off</span>
       <h2 aria-label="The nose that bows">
         <span class="h-pair d2" id="droop-l" aria-hidden="true" data-reveal>The nose</span>
@@ -225,7 +224,7 @@
       </div>
       <span></span>
       <div class="credits label">
-        <div class="l"><span class="rule"></span><p><span>Concorde: A Transatlantic Journey</span><span>Human Centered Design student project</span></p></div>
+        <div class="l"><span class="rule"></span><p><span>Concorde: A Transatlantic Journey</span><span>Human Centered Design student project</span><span>3D model: <a href="https://sketchfab.com/3d-models/concorde-6d95290363474798a429a38bbf9ad49d">"Concorde"</a> by <a href="https://sketchfab.com/manilov.ap">manilov.ap</a> on Sketchfab, <a href="https://creativecommons.org/licenses/by/4.0/">CC Attribution</a>, nose split for this site</span></p></div>
         <div class="r"><span class="hair"></span><span>Images are AI-generated illustrations, not photographs of the real aircraft</span></div>
       </div>
     </section>
@@ -236,6 +235,11 @@
 <script src="js/concorde3d.js"></script>
 <script src="js/globe3d.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js"></script>
 <script src="js/site.js"></script>
+<!-- the droop nose scene is an ES module: it needs the loaders and post-processing that three ships only as modules -->
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.149.0/examples/jsm/"}}</script>
+<script type="module" src="js/droop3d.js"></script>
 </body>
 </html>
