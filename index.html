@@ -74,7 +74,7 @@
     </ul>
   </nav>
   <a class="wordmark" id="wordmark" href="#boarding">Concorde</a>
-  <div class="route"><span>LHR → JFK</span><span>1976 / 2003</span></div>
+  <div class="route"><button class="sound" id="sound" type="button" aria-pressed="false"><span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="sound-t">Sound off</span></button><span>LHR → JFK</span><span>1976 / 2003</span></div>
 </header>
 
 <div class="hud" aria-hidden="true">
@@ -189,7 +189,7 @@
         <span class="h-mach d1 will" id="flyat" aria-hidden="true" data-reveal>Fly at</span>
         <span class="h-mach d1 will" id="machtwo" aria-hidden="true" data-reveal>Mach 2</span>
       </h2>
-      <canvas class="gl" id="mach3d" role="img" aria-label="3D Concorde seen from above with reheat on, rising between the words and spreading its delta wing"></canvas>
+      <canvas class="gl" id="mach3d" role="img" aria-label="The 3D Concorde seen from straight above, rising between the words until its delta wing fills the page"></canvas>
       <p class="side-copy sub will" id="sidecopy">Twice the speed of sound, on a delta wing built for it.</p>
       <div class="spec will" id="spec">
         <span class="hair"></span>
@@ -283,8 +283,11 @@
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js"></script>
 <script src="js/site.js"></script>
 <script src="js/checkin.js"></script>
+<script src="js/cinemagraph.js"></script>
+<script src="js/sound.js"></script>
 <!-- the droop nose scene is an ES module: it needs the loaders and post-processing that three ships only as modules -->
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.149.0/examples/jsm/"}}</script>
 <script type="module" src="js/droop3d.js"></script>
+<script type="module" src="js/mach3d.js"></script>
 </body>
 </html>

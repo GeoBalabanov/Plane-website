@@ -152,30 +152,6 @@
     return { plane, nosePivot, gear, flames, sight, setDroop };
   }
 
-  /* ---------- scene: Mach 2 seen from above ---------- */
-  function mach2Scene(canvas) {
-    const renderer = makeRenderer(canvas), env = studioEnv(renderer);
-    const scene = new T.Scene(); scene.environment = env;
-    const cam = new T.PerspectiveCamera(22, 1, 1, 2000); cam.up.set(1, 0, 0);
-    scene.add(new T.HemisphereLight(0xffffff, 0xd8cfd6, .85));
-    const sun = new T.DirectionalLight(0xfff6ee, 1.8); sun.position.set(40, 140, 50); sun.castShadow = true;
-    Object.assign(sun.shadow.camera, { left: -70, right: 70, top: 70, bottom: -70, near: 20, far: 400 }); sun.shadow.mapSize.set(2048, 2048); sun.shadow.radius = 6;
-    sun.target.position.set(30, 0, 0); scene.add(sun, sun.target);
-    const floor = new T.Mesh(new T.PlaneGeometry(1200, 1200), new T.ShadowMaterial({ opacity: .16 }));
-    floor.rotation.x = -Math.PI / 2; floor.position.y = -26; floor.receiveShadow = true; scene.add(floor);
-    const ac = buildConcorde(env); ac.gear.visible = false; ac.flames.forEach(f => f.visible = true); ac.setDroop(0);
-    const holder = new T.Group(); holder.add(ac.plane); scene.add(holder);
-    function update(p, t) {
-      const rise = ease(seg(p, 0, .45)), grow = ease(seg(p, .5, .95));
-      holder.position.x = lerp(-70, 0, rise);
-      holder.rotation.x = Math.sin(t * .0007) * .035 + .06 * (1 - rise);     // a gentle bank while it climbs in
-      const H = lerp(215, 52, grow), cx = lerp(30.5, 17, grow);
-      cam.position.set(cx, H, 0); cam.lookAt(cx, 0, 0);
-      ac.flames.forEach((f, i) => { f.scale.set(1, .85 + .15 * Math.sin(t * .02 + i), 1); });
-    }
-    return { renderer, scene, cam, update, always: true };
-  }
-
   /* ---------- canvas textures: seat fabric and instrument panels ---------- */
   function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
   function texFrom(c, rep) { const t = new T.CanvasTexture(c); t.encoding = T.sRGBEncoding; t.anisotropy = 8; if (rep) { t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(rep[0], rep[1]); } return t; }
@@ -402,7 +378,6 @@
   let cabin, mach;
   try {
     cabin = add('cabin3d', cabinScene, 'cabin');
-    mach = add('mach3d', mach2Scene, 'mach2');
   } catch (e) { console.error(e); return; }
 
   function resize() {
