@@ -22,18 +22,18 @@ const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const DEG = Math.PI / 180, STAND = 2.77;                   // height of the model's lowest point when the aircraft stands on its gear (12.2 m to the fin tip)
 const MAIN_Z = -2.7;                                       // main bogies along the aircraft: the aircraft rotates about them
 const BASE = 330, TOPS = 400;                              // cloud deck: base and tops, in metres above the runway
+const VBASE = 300, VTOP = 410;                            // the volume of the sea of cloud seen from above
 
 /* ---------- shared GLSL: the photographed evening sky ("Evening Road 01", Poly Haven, CC0), used by the dome,
    the haze on the ground and the clouds. Only its upper part is stored, so below the horizon it holds the horizon. ---------- */
 const SKY = `
-  uniform vec3 sunDir; uniform sampler2D tSky; uniform float skyRot, skyGain, skyT;
+  uniform vec3 sunDir, duskSun; uniform sampler2D tSky; uniform float skyRot, skyGain, skyT, dusk;
   float hash(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
   float noise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f);
     return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1)), f.x), f.y); }
   float fbm(vec2 p){ float v = 0., a = .5; for (int i = 0; i < 5; i++){ v += a * noise(p); p = p * 2.03 + 17.1; a *= .5; } return v; }
   vec3 skyAt(float u, float v){ return texture2D(tSky, vec2(u, 1. - min(v, .552) / .56)).rgb; }
-  vec3 sky(vec3 d){
-    d = normalize(d);
+  vec3 photoSky(vec3 d){
     // the clouds drift with the wind like a time-lapse, faster overhead than at the horizon, and churn as they go
     float el = asin(clamp(d.y, -1., 1.)), v = .5 - el * .3183099;
     float u = atan(d.z, d.x) * .1591549 + .5 + skyRot + skyT * (.0004 + .0007 * smoothstep(0., .9, el));
@@ -47,7 +47,24 @@ const SKY = `
     c = mix(c, c * (.75 + .6 * l), .55 * m);
     c *= mix(vec3(1.), vec3(1.06, 1., .92), m * .4);
     c *= mix(vec3(1.), vec3(.84, .9, 1.04), smoothstep(.15, .9, el) * (1. - m));   // deeper, bluer overhead
-    return pow(c, vec3(2.2)) * skyGain; }`;
+    return pow(c, vec3(2.2)) * skyGain; }
+  // above the deck the sun is setting: orange and peach low down towards it, rose and violet away from it, deep blue overhead
+  float disc = 1.;                                           // the sun disc; off for the colour of the haze, which is looked up level
+  vec3 duskSky(vec3 d){
+    float y = max(d.y, 0.);
+    float toSun = max(dot(normalize(d.xz + 1e-5), normalize(duskSun.xz)), 0.);
+    vec3 horizon = mix(vec3(.66, .5, .6), vec3(1.3, .6, .28), pow(toSun, 2.5));
+    vec3 band = mix(vec3(.44, .4, .64), vec3(.95, .52, .44), pow(toSun, 3.));
+    vec3 c = mix(horizon, band, smoothstep(0., .1, y));
+    c = mix(c, vec3(.2, .27, .52), smoothstep(.06, .32, y));
+    c = mix(c, vec3(.05, .09, .24), smoothstep(.3, .9, y));
+    float s = max(dot(d, duskSun), 0.);
+    c += vec3(1.35, .74, .42) * (pow(s, 5.) * .3 + pow(s, 48.) * .7 + pow(s, 900.) * 1.6);
+    c += vec3(1.6, 1.2, .85) * smoothstep(.99965, .99985, s) * 8. * disc;
+    return pow(c, vec3(2.2)) * .62; }
+  vec3 sky(vec3 d){
+    d = normalize(d);
+    return dusk <= 0. ? photoSky(d) : dusk >= 1. ? duskSky(d) : mix(photoSky(d), duskSky(d), dusk); }`;
 const VERT = 'varying vec3 w; void main(){ vec4 p = modelMatrix * vec4(position, 1.); w = p.xyz; gl_Position = projectionMatrix * viewMatrix * p; }';
 
 function start() {
@@ -64,7 +81,8 @@ function start() {
   const SKY_ROT = -.2254, sunDir = new THREE.Vector3(-.6 * Math.cos(19 * DEG), Math.sin(19 * DEG), .8 * Math.cos(19 * DEG));
   const tex = (url, srgb) => { const t = new THREE.TextureLoader().load(url, () => { dirty = true; }); t.wrapS = t.wrapT = THREE.RepeatWrapping; if (srgb) t.encoding = THREE.sRGBEncoding; t.anisotropy = renderer.capabilities.getMaxAnisotropy(); return t; };
   const skyTex = tex('assets/sky.webp'); skyTex.wrapT = THREE.ClampToEdgeWrapping; skyTex.generateMipmaps = false; skyTex.minFilter = THREE.LinearFilter;
-  const U = { sunDir: { value: sunDir }, dist: { value: 0 }, time: { value: 0 }, tSky: { value: skyTex }, skyRot: { value: SKY_ROT }, skyGain: { value: .82 }, skyT: { value: 0 } };
+  const U = { sunDir: { value: sunDir }, dist: { value: 0 }, time: { value: 0 }, tSky: { value: skyTex }, skyRot: { value: SKY_ROT }, skyGain: { value: .82 }, skyT: { value: 0 },
+    dusk: { value: 0 }, duskSun: { value: new THREE.Vector3(.87, .012, .5).normalize() } };   // the setting sun, low and ahead of the aircraft, off to the side above the deck
 
   /* ---------- sky dome; the reflections and fill light come from the same sky as a full HDR ---------- */
   const skyMat = new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false, depthTest: false, uniforms: U,
@@ -277,14 +295,81 @@ function start() {
         col_a = smoothstep(.46, .64, n) * .94;
         col = mix(col, hz, 1. - exp(-d / 7000.));`}
         gl_FragColor = vec4(col, col_a); }` });
-  const deckTops = new THREE.Mesh(new THREE.PlaneGeometry(60000, 60000).rotateX(-Math.PI / 2), deckMat(true)); deckTops.position.y = TOPS;
+  let deckTops = new THREE.Mesh(new THREE.PlaneGeometry(60000, 60000).rotateX(-Math.PI / 2), deckMat(true)); deckTops.position.y = TOPS;
+  // with WebGL 2 the sea of cloud is real volume, the same cloud as the supersonic scene: heaps with soft edges,
+  // lit gold by the setting sun. The flat plane only marks where the rays start, at the top of the layer
+  if (renderer.capabilities.isWebGL2 && window.cloudNoise) {
+    const { data, N } = window.cloudNoise();
+    const vol = new THREE.Data3DTexture(data, N, N, N);
+    vol.format = THREE.RGFormat; vol.minFilter = vol.magFilter = THREE.LinearFilter; vol.wrapS = vol.wrapT = vol.wrapR = THREE.RepeatWrapping; vol.unpackAlignment = 1; vol.needsUpdate = true;
+    const mat = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, uniforms: { ...U, vol: { value: vol } }, vertexShader: VERT,
+      fragmentShader: 'precision highp sampler3D; uniform sampler3D vol;\n' + SKY + `uniform float dist, time; varying vec3 w;
+        const float VB = ${VBASE}., VH = ${VTOP - VBASE}., KM = .000012, M = 60.;   // the layer in metres; the Earth's curve; metres per noise unit
+        float remap(float v, float a, float b, float c, float d){ return c + (v - a) / (b - a) * (d - c); }
+        float dens(vec3 p, bool fine){
+          vec2 dx = p.xz - cameraPosition.xz;
+          float h = (p.y - VB + KM * dot(dx, dx)) / VH;
+          if (h < 0. || h > 1.) return 0.;
+          vec3 q = vec3(p.x + time * 3., p.y, p.z + dist) / M;      // the deck streams past with the ground
+          float cov = smoothstep(.2, .8, texture(vol, vec3(q.xz * .021, .37)).r);
+          float top = mix(.4, 1., cov);
+          float hg = smoothstep(0., .07, h) * (1. - smoothstep(top * .45, top, h));
+          float d = clamp(remap(texture(vol, q * vec3(.13, .19, .13)).r * hg, .5 - cov * .36, 1., 0., 1.), 0., 1.);
+          if (fine && d > 0.) { float e = texture(vol, q * .62 + vec3(0., time * .01, 0.)).g;
+            d = clamp(remap(d, (1. - e) * .32 * (1. - h * .4), 1., 0., 1.), 0., 1.); }
+          return d;
+        }
+        float hgP(float c, float g){ float g2 = g * g; return (1. - g2) / pow(1. + g2 - 2. * g * c, 1.5) * .0796; }
+        vec3 lin(vec3 c){ return pow(max(c, 0.), vec3(2.2)) * .62; }
+        void main(){
+          vec3 ro = cameraPosition, rd = normalize(w - ro);
+          vec3 L = normalize(duskSun + vec3(0., .1, 0.));
+          float cosT = dot(rd, L), phase = mix(hgP(cosT, .72), hgP(cosT, -.15), .45) * 3.;
+          float t = length(w - ro), stp = 3.;
+          t += stp * hash(gl_FragCoord.xy);
+          vec3 col = vec3(0.); float tr = 1., tHit = -1., under = 0.;
+          for (int i = 0; i < 72; i++) {
+            vec3 p = ro + rd * t;
+            vec2 dx = p.xz - ro.xz;
+            float y = p.y - VB + KM * dot(dx, dx);
+            if (y < -3.) { under = 1.; break; }
+            if (t > 26000.) break;
+            float de = dens(p, t < 2400.);
+            if (de > .003) {
+              if (tHit < 0.) tHit = t;
+              float od = 0., ls = 4.;
+              for (int j = 0; j < 4; j++) { od += dens(p + L * ls, false) * ls; ls *= 2.1; }
+              od *= 5. / M;
+              float sun = max(exp(-od), exp(-od * .22) * .45) * (1. - exp(-de * 18.) * .55);
+              vec3 amb = mix(vec3(.17, .18, .32), vec3(.5, .45, .66), clamp(y / VH, 0., 1.)) * .75;
+              vec3 c = amb + vec3(1.35, .74, .42) * 3.8 * sun * phase;
+              float a = 1. - exp(-de * 9. * stp / M);
+              col += tr * a * c; tr *= 1. - a;
+              if (tr < .015) break;
+            }
+            stp = 3. + (t - length(w - ro)) * .018 + t * .004; t += stp;
+          }
+          if (tHit < 0.) tHit = t;
+          under *= exp(-(ro.y - VB) / max(-rd.y, .001) / M * .035);
+          disc = 0.; vec3 hz = sky(normalize(vec3(rd.x, 0., rd.z)));
+          col = lin(col);
+          float haze = max(1. - exp(-tHit / M * .034), smoothstep(-.12, -.035, rd.y));
+          col = mix(col, hz * .92, haze * (1. - tr) * .93);
+          vec3 gap = mix(hz, lin(vec3(.13, .15, .29)), under);          // through a gap: the shadowed lower cloud far below
+          float alpha = max(1. - tr, under > 0. ? 1. : 0.);
+          col += tr * gap * (under > 0. ? 1. : 0.);
+          gl_FragColor = vec4(col / max(alpha, .001), alpha * dusk);
+        }` });
+    deckTops.material = mat; deckTops.position.y = VTOP;
+  }
   for (const m of [deckTops]) { m.frustumCulled = false; m.renderOrder = -5; scene.add(m); }
 
   // loose puffs in and around the deck: they stream past as the aircraft climbs through
   const puffTex = (() => {
     const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d');
     for (let i = 0; i < 46; i++) {
-      const a = Math.random() * 6.283, r = Math.pow(Math.random(), .7) * 70, x = 128 + Math.cos(a) * r * 1.2, y = 136 + Math.sin(a) * r * .55, R = 26 + Math.random() * 44;
+      const a = Math.random() * 6.283, r = Math.pow(Math.random(), .7) * 70, x = 128 + Math.cos(a) * r * 1.2, y = 136 + Math.sin(a) * r * .55;
+      const R = Math.min(26 + Math.random() * 44, 127 - Math.abs(x - 128), 119 - Math.abs(y - 136));   // stays inside the canvas: no hard edges
       const gr = g.createRadialGradient(x, y, 0, x, y, R); gr.addColorStop(0, 'rgba(255,255,255,.5)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
       g.fillStyle = gr; g.fillRect(0, 0, 256, 256);
     }
@@ -304,6 +389,8 @@ function start() {
 
   /* ---------- light: the low sun of the photo, with real shadows; the sky itself fills in through the reflections ---------- */
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  const SUN_DAY = new THREE.Color(0xffb070), SUN_DUSK = new THREE.Color(0xff9150), duskLight = U.duskSun.value.clone().add(new THREE.Vector3(0, .1, 0)).normalize();
+  let lowRes = false;
   const sun = new THREE.DirectionalLight(0xffb070, 4.2); sun.castShadow = true; scene.add(sun, sun.target);
   sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -.0004; sun.shadow.normalBias = .04;
   Object.assign(sun.shadow.camera, { left: -48, right: 48, top: 48, bottom: -48, near: 1, far: 400 }); sun.shadow.camera.updateProjectionMatrix();
@@ -526,7 +613,7 @@ function start() {
 
   function resize() {
     const w = canvas.clientWidth, h = canvas.clientHeight; if (!w || !h) return;
-    renderer.setSize(w, h, false); composer.setPixelRatio(dpr); composer.setSize(w, h);
+    renderer.setSize(w, h, false); composer.setPixelRatio(lowRes ? Math.min(dpr, 1) : dpr); composer.setSize(w, h);
     cam.aspect = w / h;
     // on a phone the readout card sits at the top, so slide the picture down into the gap between the two cards
     if (w < h) cam.setViewOffset(w, h, 0, -h * .1, w, h); else cam.clearViewOffset();
@@ -606,7 +693,13 @@ function start() {
         fields.forEach(F => F.u.focus.value.set(cam.position.x + f.x * F.T * .32, cam.position.z + f.z * F.T * .32 + S.dist));
         fields[1].u.hole.value.x = fields[0].u.focus.value.x; fields[1].u.hole.value.y = fields[0].u.focus.value.y;
         grass.visible = cam.position.y < 60; }
-      sun.target.position.set(0, S.alt, 0); sun.position.copy(sunDir).multiplyScalar(150).add(sun.target.position);
+      // above the deck (the swap happens while the picture is white inside the cloud) the sun is setting ahead
+      const dk = THREE.MathUtils.smoothstep(cam.position.y, 352, 388); U.dusk.value = dk;
+      ground.visible = lightPts.visible = dk < 1;
+      sun.target.position.set(0, S.alt, 0);
+      sun.position.copy(sunDir).lerp(duskLight, dk).normalize().multiplyScalar(150).add(sun.target.position);
+      sun.color.copy(SUN_DAY).lerp(SUN_DUSK, dk);
+      if ((dk >= 1) !== lowRes) { lowRes = dk >= 1; composer.setPixelRatio(lowRes ? Math.min(dpr, 1) : dpr); resize(); }   // the volume is costly: one pixel per CSS pixel above the deck
       dof.uniforms.focus.value = cam.position.distanceTo(target);
       if (cam.fov !== S.fov) { cam.fov = S.fov; cam.updateProjectionMatrix(); }
       scale = canvas.height / (2 * Math.tan(cam.fov * DEG / 2)); lightMat.uniforms.scale.value = scale;
