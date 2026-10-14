@@ -493,7 +493,7 @@ html.walking .cta,html.walking .hud,html.walking .stagebar{opacity:0!important;p
 
 /* supersonic: live clouds, and a calmer paragraph that reads over them */
 #boom .clouds3d{z-index:0}
-#boom .tint{z-index:1;background:linear-gradient(180deg,rgba(4,16,40,.38) 0%,rgba(4,16,40,0) 30%,rgba(4,16,40,0) 52%,rgba(4,18,44,.55) 100%)}
+#boom .tint{z-index:1;background:linear-gradient(180deg,rgba(12,12,38,.3) 0%,rgba(12,12,38,0) 28%,rgba(12,12,38,0) 52%,rgba(14,12,36,.5) 100%)}
 #boom .meter,#boom .para{z-index:2}
 #boom .para{right:auto;max-width:min(22ch,calc(100vw - 2*var(--gutter)));font-size:clamp(26px,2.9vw,46px);line-height:1.08;letter-spacing:-.025em;
   text-shadow:0 2px 24px rgba(4,16,40,.35)}

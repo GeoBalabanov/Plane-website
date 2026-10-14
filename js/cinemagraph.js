@@ -57,13 +57,20 @@
     float remap(float v, float a, float b, float c, float d){ return c + (v - a) / (b - a) * (d - c); }
     const float K = .0009;                                     // how fast the deck falls away with distance: the curve of the Earth
     const float H = 1.5;                                       // depth of the cloud layer
-    const vec3 SUN = vec3(1., .93, .84);
+    const vec3 SUN = vec3(1.35, .74, .42);                     // a low evening sun: deep gold
+    // a sunset sky: orange and peach low down towards the sun, dusky rose and violet away from it, deep blue overhead
     vec3 skyCol(vec3 d){
-      float y = max(d.y + .03, 0.);
-      vec3 c = mix(vec3(.7, .8, .9), vec3(.16, .34, .66), pow(y, .5));        // pale haze at the horizon, deep blue above
-      c = mix(c, vec3(.05, .14, .38), smoothstep(.3, 1., y));                  // darker overhead: thin air
+      float y = max(d.y, 0.);
+      float toSun = max(dot(normalize(d.xz + 1e-5), normalize(sunDir.xz)), 0.);
+      vec3 horizon = mix(vec3(.6, .46, .6), vec3(1.3, .58, .26), pow(toSun, 2.5));
+      vec3 band = mix(vec3(.42, .4, .64), vec3(.95, .5, .44), pow(toSun, 3.));
+      vec3 c = mix(horizon, band, smoothstep(0., .1, y));
+      c = mix(c, vec3(.2, .27, .52), smoothstep(.06, .32, y));
+      c = mix(c, vec3(.05, .09, .24), smoothstep(.3, .9, y));                  // thin air overhead
       float s = max(dot(d, sunDir), 0.);
-      return c + SUN * (pow(s, 12.) * .18 + pow(s, 600.) * 3.);
+      c += SUN * (pow(s, 5.) * .3 + pow(s, 48.) * .7 + pow(s, 900.) * 1.6);                         // the glow around the sun
+      c += vec3(1.6, 1.2, .85) * smoothstep(.99972, .99988, s) * 8.;             // the sun itself
+      return c;
     }
     float density(vec3 p, vec3 cam, bool fine){
       vec2 dx = p.xz - cam.xz;
@@ -99,7 +106,8 @@
       vec3 sky = skyCol(d);
       vec3 col = vec3(0.); float tr = 1., tHit = -1., under = 0.;
       if (d.y < -.002) {
-        float cosT = dot(d, sunDir), phase = mix(hgPhase(cosT, .55), hgPhase(cosT, -.2), .35) * 3.;
+        vec3 sunL = normalize(sunDir + vec3(0., .1, 0.));   // the light, a touch above the disc: the cloud horizon dips below eye level with the curve of the Earth
+        float cosT = dot(d, sunL), phase = mix(hgPhase(cosT, .72), hgPhase(cosT, -.15), .45) * 3.;   // strong forward glow: lit edges towards the sun
         float t = (cam.y - H) / -d.y;                          // skip the clear air above the layer
         float stp = .05;
         t += stp * hash(gl_FragCoord.xy);                      // a fixed sub-step offset: no banding
@@ -107,18 +115,19 @@
           vec3 p = cam + d * t;
           vec2 dx = p.xz - cam.xz;
           float y = p.y + K * dot(dx, dx);
-          if (y < -.05 || t > 160.) break;                      // through the bottom of the layer
+          if (y < -.05) { under = 1.; break; }                   // through the bottom of the layer
+          if (t > 160.) break;
           float de = density(p, cam, t < 40.);
           if (de > .003) {
             if (tHit < 0.) tHit = t;
             // light: how much cloud lies between this point and the sun, in four growing steps
             float od = 0., ls = .07;
-            for (int j = 0; j < 4; j++) { od += density(p + sunDir * ls, cam, false) * ls; ls *= 2.1; }
+            for (int j = 0; j < 4; j++) { od += density(p + sunL * ls, cam, false) * ls; ls *= 2.1; }
             od *= 5.;
             float sun = max(exp(-od), exp(-od * .22) * .45) * (1. - exp(-de * 18.) * .55);   // light through the cloud, with soft edges glowing
             float hh = clamp(y / H, 0., 1.);
-            vec3 amb = mix(vec3(.3, .38, .55), vec3(.72, .82, 1.), hh) * .7;
-            vec3 c = amb + SUN * 4. * sun * phase;
+            vec3 amb = mix(vec3(.17, .18, .32), vec3(.5, .45, .66), hh) * .75;   // the shade: violet below, dusky rose on top
+            vec3 c = amb + SUN * 4.6 * sun * phase;
             float a = 1. - exp(-de * 9. * stp);
             col += tr * a * c; tr *= 1. - a;
             if (tr < .015) break;
@@ -126,15 +135,15 @@
           stp = .05 + t * .018; t += stp;
         }
         if (tHit < 0.) tHit = t;
-        under = exp(-cam.y / -d.y * .035);                     // how clearly the lower cloud shows through, fading with distance
+        under *= exp(-cam.y / -d.y * .035);                     // how clearly the lower cloud shows through, fading with distance
       }
       // distance melts the cloud into the pale haze of the horizon
-      float haze = tHit > 0. ? 1. - exp(-tHit * .028) : 0.;
-      col = col + tr * mix(under > 0. ? skyCol(vec3(d.x, 0., d.z)) : sky, vec3(.26, .36, .52), under);          // through a gap: the shadowed lower cloud far below
-      col = mix(col, skyCol(vec3(d.x, .0, d.z)) * vec3(.97, .98, 1.), haze * (1. - tr) * .8);   // only the cloud itself; the gaps fade on their own
+      float haze = tHit > 0. ? max(1. - exp(-tHit * .034), smoothstep(-.12, -.035, d.y)) : 0.;   // the far edge melts into the glow
+      col = col + tr * mix(under > 0. ? skyCol(vec3(d.x, 0., d.z)) : sky, vec3(.13, .15, .29), under);          // through a gap: the shadowed lower cloud far below
+      col = mix(col, skyCol(vec3(d.x, .0, d.z)) * .92, haze * (1. - tr) * .93);   // only the cloud itself; the gaps fade on their own
       col += ring * .3 + shock * (1. - shock) * .2;
-      col = 1. - exp(-col * 1.15);                                               // soft filmic curve
-      col = pow(col, vec3(.95));
+      col = 1. - exp(-col * 1.1);                                                // soft filmic curve
+      col = pow(col, vec3(.95, .97, 1.03));                                      // a warm film grade
       vec2 q = vUv - .5; col *= 1. - dot(q, q) * .3;                             // a little vignette
       col += (hash(gl_FragCoord.xy + fract(time) * 91.) - .5) / 255.;           // dither: smooth gradients in the sky
       outColor = vec4(col, 1.);
@@ -149,7 +158,7 @@
     try { renderer = new T.WebGLRenderer({ canvas: cv, antialias: false, alpha: false, powerPreference: 'high-performance' }); } catch (e) { cv.remove(); return null; }
     if (!renderer.capabilities.isWebGL2) { renderer.dispose(); cv.remove(); return null; }   // the volume needs WebGL 2: keep the photo
     const U = { vol: { value: noiseVolume() }, view: { value: new T.Vector2(1, 1) }, time: { value: 0 }, travel: { value: 0 }, lift: { value: 0 },
-      shock: { value: 0 }, shake: { value: 0 }, sunDir: { value: new T.Vector3(.72, .3, -.62).normalize() } };
+      shock: { value: 0 }, shake: { value: 0 }, sunDir: { value: new T.Vector3(.4, -.045, -1).normalize() } };
     const scene = new T.Scene(), cam = new T.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     scene.add(new T.Mesh(new T.PlaneGeometry(2, 2), new T.ShaderMaterial({ uniforms: U, fragmentShader: FRAG, glslVersion: T.GLSL3,
       vertexShader: 'out vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position, 1.); }' })));
