@@ -53,11 +53,21 @@ const SKY = `
   vec3 duskSky(vec3 d){
     float y = max(d.y, 0.);
     float toSun = max(dot(normalize(d.xz + 1e-5), normalize(duskSun.xz)), 0.);
-    vec3 horizon = mix(vec3(.66, .5, .6), vec3(1.3, .6, .28), pow(toSun, 2.5));
-    vec3 band = mix(vec3(.44, .4, .64), vec3(.95, .52, .44), pow(toSun, 3.));
+    vec3 horizon = mix(vec3(.92, .62, .52), vec3(1.3, .62, .3), pow(toSun, 2.));
+    vec3 band = mix(vec3(.62, .55, .7), vec3(1., .6, .45), pow(toSun, 2.));
     vec3 c = mix(horizon, band, smoothstep(0., .1, y));
-    c = mix(c, vec3(.2, .27, .52), smoothstep(.06, .32, y));
-    c = mix(c, vec3(.05, .09, .24), smoothstep(.3, .9, y));
+    c = mix(c, vec3(.26, .34, .58), smoothstep(.1, .42, y));
+    c = mix(c, vec3(.07, .12, .3), smoothstep(.4, 1., y));
+    // the photographed clouds, drifting, lit from below by the sun on the horizon: fiery towards it, violet away from it
+    float el = asin(clamp(d.y, -1., 1.)), v = .5 - el * .3183099;
+    float u = atan(d.z, d.x) * .1591549 + .5 + skyRot + skyT * (.0004 + .0007 * smoothstep(0., .9, el));
+    vec2 o = vec2(.0016, .0024);                                    // a soft five-tap read: the photo is small, its blocks must not show
+    vec3 p0 = (skyAt(u, v) * 2. + skyAt(u + o.x, v + o.y) + skyAt(u - o.x, v - o.y) + skyAt(u + o.x, v - o.y) + skyAt(u - o.x, v + o.y)) / 6.;
+    float m = (1. - smoothstep(.1, .3, (p0.b - p0.r) / max(p0.b, .02))) * smoothstep(.0, .05, d.y), l = dot(p0, vec3(.299, .587, .114));   // cloud: grey, not blue
+    float rimK = pow(toSun, 1.5) * (1. - smoothstep(.05, .5, y));
+    vec3 cc = mix(vec3(.24, .2, .27), vec3(.82, .62, .58), smoothstep(.25, .9, l));
+    cc = mix(cc, vec3(1.3, .66, .34) * (.55 + .7 * l), rimK);
+    c = mix(c, cc, m * .9);
     float s = max(dot(d, duskSun), 0.);
     c += vec3(1.35, .74, .42) * (pow(s, 5.) * .3 + pow(s, 48.) * .7 + pow(s, 900.) * 1.6);
     c += vec3(1.6, 1.2, .85) * smoothstep(.99965, .99985, s) * 8. * disc;
@@ -82,7 +92,13 @@ function start() {
   const tex = (url, srgb) => { const t = new THREE.TextureLoader().load(url, () => { dirty = true; }); t.wrapS = t.wrapT = THREE.RepeatWrapping; if (srgb) t.encoding = THREE.sRGBEncoding; t.anisotropy = renderer.capabilities.getMaxAnisotropy(); return t; };
   const skyTex = tex('assets/sky.webp'); skyTex.wrapT = THREE.ClampToEdgeWrapping; skyTex.generateMipmaps = false; skyTex.minFilter = THREE.LinearFilter;
   const U = { sunDir: { value: sunDir }, dist: { value: 0 }, time: { value: 0 }, tSky: { value: skyTex }, skyRot: { value: SKY_ROT }, skyGain: { value: .82 }, skyT: { value: 0 },
-    dusk: { value: 0 }, duskSun: { value: new THREE.Vector3(.87, .012, .5).normalize() } };   // the setting sun, low and ahead of the aircraft, off to the side above the deck
+    dusk: { value: 1 }, duskSun: { value: new THREE.Vector3(.87, .012, .5).normalize() } };   // the setting sun, low and ahead of the aircraft, off to the side above the deck
+
+  // the whole take-off happens at golden hour, one low sun lighting everything. On the ground it stands behind the camera's
+  // shoulder, gilding the side of the aircraft we see; above the deck it is setting ahead (the swap is hidden inside the cloud)
+  const SUN_GROUND = new THREE.Vector3(-.6, .035, .8).normalize(), SUN_ABOVE = U.duskSun.value.clone();
+  const setSun = k => { U.duskSun.value.copy(SUN_GROUND).lerp(SUN_ABOVE, k).normalize(); sunDir.copy(U.duskSun.value).add(new THREE.Vector3(0, .1, 0)).normalize(); };
+  setSun(0);
 
   /* ---------- sky dome; the reflections and fill light come from the same sky as a full HDR ---------- */
   const skyMat = new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false, depthTest: false, uniforms: U,
@@ -262,7 +278,7 @@ function start() {
   lightGeo.setAttribute('color', new THREE.Float32BufferAttribute(lights.c, 3));
   lightGeo.setAttribute('size', new THREE.Float32BufferAttribute(lights.s, 1));
   const lightMat = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-    uniforms: { dist: U.dist, scale: { value: 1000 }, glow: { value: .9 } },
+    uniforms: { dist: U.dist, scale: { value: 1000 }, glow: { value: 1.7 } },   // dusk: the airfield lights are on and bright
     vertexShader: `uniform float dist, scale; attribute vec3 color; attribute float size; varying vec3 c; varying float a;
       void main(){ vec3 p = position; p.z -= dist; vec4 mv = modelViewMatrix * vec4(p, 1.);
         float px = size * scale / -mv.z; a = clamp(px / 2., 0., 1.) * exp(-length(mv.xyz) / 4000.); c = color;
@@ -389,9 +405,9 @@ function start() {
 
   /* ---------- light: the low sun of the photo, with real shadows; the sky itself fills in through the reflections ---------- */
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  const SUN_DAY = new THREE.Color(0xffb070), SUN_DUSK = new THREE.Color(0xff9150), duskLight = U.duskSun.value.clone().add(new THREE.Vector3(0, .1, 0)).normalize();
+  const SUN_DAY = new THREE.Color(0xffa766), SUN_DUSK = new THREE.Color(0xff9150);
   let lowRes = false;
-  const sun = new THREE.DirectionalLight(0xffb070, 4.2); sun.castShadow = true; scene.add(sun, sun.target);
+  const sun = new THREE.DirectionalLight(0xff9a5a, 4.6); sun.castShadow = true; scene.add(sun, sun.target);
   sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -.0004; sun.shadow.normalBias = .04;
   Object.assign(sun.shadow.camera, { left: -48, right: 48, top: 48, bottom: -48, near: 1, far: 400 }); sun.shadow.camera.updateProjectionMatrix();
 
@@ -529,7 +545,7 @@ function start() {
     gltf.scene.traverse(o => {
       if (!o.isMesh) return;
       o.layers.enable(1); o.castShadow = o.receiveShadow = true;   // layer 1 is what the contact shadow sees
-      const m = o.material; if (m.name !== 'Seal') { m.roughness = .32; m.envMapIntensity = .55; }
+      const m = o.material; if (m.name !== 'Seal') { m.roughness = .32; m.envMapIntensity = .38; }
       if (m.map) m.map.anisotropy = renderer.capabilities.getMaxAnisotropy();
     });
     aircraft.add(gltf.scene); gltf.scene.updateMatrixWorld(true);
@@ -694,10 +710,10 @@ function start() {
         fields[1].u.hole.value.x = fields[0].u.focus.value.x; fields[1].u.hole.value.y = fields[0].u.focus.value.y;
         grass.visible = cam.position.y < 60; }
       // above the deck (the swap happens while the picture is white inside the cloud) the sun is setting ahead
-      const dk = THREE.MathUtils.smoothstep(cam.position.y, 352, 388); U.dusk.value = dk;
+      const dk = THREE.MathUtils.smoothstep(cam.position.y, 352, 388);
       ground.visible = lightPts.visible = dk < 1;
       sun.target.position.set(0, S.alt, 0);
-      sun.position.copy(sunDir).lerp(duskLight, dk).normalize().multiplyScalar(150).add(sun.target.position);
+      setSun(dk); sun.position.copy(sunDir).multiplyScalar(150).add(sun.target.position);
       sun.color.copy(SUN_DAY).lerp(SUN_DUSK, dk);
       if ((dk >= 1) !== lowRes) { lowRes = dk >= 1; composer.setPixelRatio(lowRes ? Math.min(dpr, 1) : dpr); resize(); }   // the volume is costly: one pixel per CSS pixel above the deck
       dof.uniforms.focus.value = cam.position.distanceTo(target);

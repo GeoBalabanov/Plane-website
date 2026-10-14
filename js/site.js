@@ -24,7 +24,7 @@
 
   const scenes = [...document.querySelectorAll('.scene'), $('end')];
   const stages = scenes.map(s => s.querySelector('.stage') || s);
-  const LIGHT = { droop: 1, mach2: 1 };                         // scenes with a light background: the chrome turns dark over them
+  const LIGHT = { mach2: 1 };                                                             // scenes with a light background: the chrome turns dark over them
 
   // smooth scroll
   let lenis = null;
