@@ -5,6 +5,7 @@
    The scroll progress of the section drives the camera; the hotspots follow points in the photos.
    "Walk inside" pauses the page: then you drag to look, step forward and back from spot to spot, and click things. */
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 const canvas = document.getElementById('cabin3d'), section = document.getElementById('cabin');
 const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -75,6 +76,11 @@ function start() {
   function powerUp(ph, mat) {
     mat.onBeforeCompile = sh => {
       sh.uniforms.time = deckU.time;
+      // where the photo's surface is stretched across a jump in depth (the edge of a seat against the panel behind),
+      // it is only a smear: it keeps its colour but stops hiding what stands there
+      sh.vertexShader = 'varying float vVZ;\n' + sh.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>\n  vVZ = -mvPosition.z;');
+      sh.fragmentShader = 'varying float vVZ;\n' + sh.fragmentShader.replace('#include <dithering_fragment>', `#include <dithering_fragment>
+        gl_FragDepth = fwidth(vVZ) / vVZ > .12 ? .99999 : gl_FragCoord.z;`);
       sh.fragmentShader = `uniform float time;
         float dh(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
         float dn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f);
@@ -170,6 +176,73 @@ function start() {
       fragmentShader: `uniform float opacity; varying float vA; void main(){ float r = length(gl_PointCoord - .5) * 2.; gl_FragColor = vec4(vec3(1., .78, .55) * exp(-r * r * 3.) * vA * .22 * opacity, 1.); }` }));
     dust.frustumCulled = false; dust.renderOrder = 1; ph.scene.add(dust);
     ph.glow = glow;
+    addPilot(ph);
+  }
+
+  /* ---------- the captain: walks in from behind you, past your shoulder, and settles into the left seat.
+     A rigged figure ("X Bot" by Mixamo, from the three.js examples) in a dark uniform and cap, lit from behind by the
+     evening sky in the windows, so mostly a silhouette with warm edges. The photo's own depth hides him behind the
+     seat back. The walk is the figure's own walk cycle; the sitting down is posed by hand on top of it. ---------- */
+  const pilot = { t0: -1, ready: false };
+  const FLOOR = -.86, HEIGHT = 1.42;                         // in the photo's scale: the floor below the camera, and his height
+  const PATH = [[-.2, .55], [-.3, -.75], [-.36, -1.12]];    // x, z: from behind the camera, up past the seat, to its side
+  const SEAT = [-.5, -1.42];                                 // where he sits, facing the panel
+  function addPilot(ph) {
+    const sun = new THREE.DirectionalLight(0xff9a5c, 2.6); sun.position.set(-.4, 1.2, -4); sun.target.position.set(-.3, 0, 0);
+    const fill = new THREE.HemisphereLight(0x8a7a90, 0x120c0a, .35);
+    const panel = new THREE.PointLight(0xffc890, .9, 2.2); panel.position.set(-.45, -.1, -2);
+    ph.scene.add(sun, sun.target, fill, panel);
+    new GLTFLoader().load('assets/models/pilot.glb', gltf => {
+      const fig = gltf.scene, root = new THREE.Group(); root.add(fig);
+      // a near-black uniform; its edges catch the warm light of the windows, as a figure does against a dusk windscreen
+      const uniform = new THREE.MeshStandardMaterial({ color: 0x0d0e14, roughness: .9, metalness: 0 });
+      uniform.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+        float rimL = pow(1. - abs(dot(normal, normalize(vViewPosition))), 5.);
+        totalEmissiveRadiance += vec3(1., .48, .2) * rimL * .45 * (.3 + .7 * smoothstep(-.2, .6, normal.y));`); };
+      fig.traverse(o => { if (o.isMesh) { o.material = uniform; o.frustumCulled = false; } });
+      fig.scale.setScalar(HEIGHT / 1.8); fig.updateMatrixWorld(true);   // the figure stands 1.8 m tall, feet at its origin
+      const bone = n => fig.getObjectByName('mixamorig' + n);
+      const B = { hips: bone('Hips'), lUp: bone('LeftUpLeg'), rUp: bone('RightUpLeg'), lLeg: bone('LeftLeg'), rLeg: bone('RightLeg'), spine: bone('Spine'), head: bone('Head') };
+      // a pilot's cap on the head bone: crown, band and peak
+      const capMat = new THREE.MeshStandardMaterial({ color: 0x14161f, roughness: .6 }), cap = new THREE.Group();
+      const crown = new THREE.Mesh(new THREE.CylinderGeometry(.128, .112, .07, 28), capMat); crown.position.y = .055;
+      const band = new THREE.Mesh(new THREE.CylinderGeometry(.114, .114, .022, 28), new THREE.MeshStandardMaterial({ color: 0xc9a14a, roughness: .35, metalness: .6 })); band.position.y = .028;
+      const peak = new THREE.Mesh(new THREE.CylinderGeometry(.13, .13, .008, 28, 1, false, -1.1, 2.2), capMat); peak.position.set(0, .016, .03); peak.scale.z = .8;
+      cap.add(crown, band, peak);
+      const s = fig.scale.x / B.head.getWorldScale(new THREE.Vector3()).x; cap.scale.setScalar(s * .9); cap.position.y = .118 * s; cap.rotation.x = -.08; B.head.add(cap);
+      const mixer = new THREE.AnimationMixer(fig), clip = n => gltf.animations.find(a => a.name === n);
+      const walk = mixer.clipAction(clip('walk')), idle = mixer.clipAction(clip('idle'));
+      walk.play(); idle.play(); idle.setEffectiveWeight(0);
+      Object.assign(pilot, { root, fig, B, mixer, walk, idle, ready: true });
+      root.visible = false; ph.scene.add(root);
+    }, undefined, e => console.error(e));
+  }
+  const smooth = t => t * t * (3 - 2 * t);
+  // pose the captain at t seconds after he set off (t < 0: not here yet)
+  function pilotAt(t, dt) {
+    if (!pilot.ready) return;
+    const { root, B, mixer, walk, idle } = pilot;
+    if (t < 0) { root.visible = false; return; }
+    root.visible = true;
+    const WALK = 3.6, STEP = 1.1, SIT = 1.4;                 // seconds: up the aisle, the step in, lowering into the seat
+    let x, z, yaw = 0, sit = 0, wk;
+    if (t < WALK) {                                          // up past your shoulder
+      const k = t / WALK, a = Math.min(1, k * 1.6), b = Math.max(0, (k - .62) / .38);
+      x = lerp(lerp(PATH[0][0], PATH[1][0], a), PATH[2][0], b); z = lerp(lerp(PATH[0][1], PATH[1][1], a), PATH[2][1], b); wk = 1;
+      yaw = -.08;
+    } else {                                                 // a step to the left, into the seat, and down
+      const k = smooth(clamp((t - WALK) / STEP)); x = lerp(PATH[2][0], SEAT[0], k); z = lerp(PATH[2][1], SEAT[1], k);
+      yaw = Math.sin(k * Math.PI) * .5; wk = 1 - k;
+      sit = smooth(clamp((t - WALK - STEP * .55) / SIT));
+    }
+    walk.setEffectiveWeight(wk); idle.setEffectiveWeight(1 - wk); walk.timeScale = 1.05;
+    mixer.update(dt);
+    root.position.set(x, FLOOR - sit * .3, z); root.rotation.y = Math.PI + yaw;   // facing the panel: away from you
+    if (sit > 0) {                                           // hips down, thighs forward, knees bent, a slight lean back
+      B.lUp.rotation.x -= sit * 1.45; B.rUp.rotation.x -= sit * 1.45;
+      B.lLeg.rotation.x += sit * 1.5; B.rLeg.rotation.x += sit * 1.5;
+      B.spine.rotation.x -= sit * .12;
+    }
   }
 
   function resize() {
@@ -354,6 +427,12 @@ function start() {
   const btnShow = p => { if (ui.btn) ui.btn.classList.toggle('on', !X.on && p > .03 && p < .985); };
 
   const hots = HOTS.map((_, i) => document.getElementById('hot' + i)), proj = new THREE.Vector3();
+  // the captain's clock: he sets off when the flight deck comes into view and is reset when you leave it
+  function pilotClock(on, t, dt) {
+    if (!on) { pilot.t0 = -1; pilotAt(-1, dt); return; }
+    if (pilot.t0 < 0) pilot.t0 = t;
+    pilotAt(RM ? 99 : (t - pilot.t0) / 1000 - .6, dt);     // a short pause first, so you see the empty seat
+  }
   let lastP = -1, lastT = 0;
   function frame(t) {
     requestAnimationFrame(frame);
@@ -390,9 +469,11 @@ function start() {
         if (vis) b.style.transform = `translate(${(proj.x + 1) / 2 * W}px, ${(1 - proj.y) / 2 * H}px)`;
       });
       hots.forEach(el => el && (el.style.opacity = 0));
+      pilotClock(SPOTS[X.spot].photo === 'deck' && X.k >= 1, t, dt);
       return;
     }
     gait(lastP < 0 ? 0 : Math.abs(p - lastP) / dt * 9, dt);                  // scrolling down the aisle is walking down it
+    pilotClock(p >= .82, t, dt);
     if (p === lastP && !dirty && RM) return;
     lastP = p; dirty = false;
     // which photos are on screen: one, or two while one fades into the next

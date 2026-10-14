@@ -18,3 +18,7 @@ Cabin tour (Wikimedia Commons; adapted: resized, depth maps estimated with Depth
 
 Footsteps (CC0): assets/sound/step0-4.mp3 from "Impact Sounds" by Kenney (www.kenney.nl), footstep_carpet_000-004,
 converted to mp3 and levelled
+
+Captain figure (flight deck): assets/models/pilot.glb is "Xbot.glb" from the three.js examples
+(github.com/mrdoob/three.js, r149, examples/models/gltf), a Mixamo character with its walk and idle animations.
+Recoloured as a dark uniform and given a cap in code; the sitting pose is set in code.
