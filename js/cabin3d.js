@@ -182,11 +182,13 @@ function start() {
   /* ---------- the captain: walks in from behind you, past your shoulder, and settles into the left seat.
      A rigged figure ("X Bot" by Mixamo, from the three.js examples) in a dark uniform and cap, lit from behind by the
      evening sky in the windows, so mostly a silhouette with warm edges. The photo's own depth hides him behind the
-     seat back. The walk is the figure's own walk cycle; the sitting down is posed by hand on top of it. ---------- */
+     seat back. The walk is the figure's own walk cycle; the sitting down and the reach for the control wheel are posed
+     by hand on top of it (two-bone reaching for each arm). ---------- */
   const pilot = { t0: -1, ready: false };
   const FLOOR = -.86, HEIGHT = 1.42;                         // in the photo's scale: the floor below the camera, and his height
   const PATH = [[-.2, .55], [-.3, -.75], [-.36, -1.12]];    // x, z: from behind the camera, up past the seat, to its side
   const SEAT = [-.5, -1.42];                                 // where he sits, facing the panel
+  const WHEEL = new THREE.Vector3(-.5, -.12, -1.9);          // the captain's control wheel, in front of his seat
   function addPilot(ph) {
     const sun = new THREE.DirectionalLight(0xff9a5c, 2.6); sun.position.set(-.4, 1.2, -4); sun.target.position.set(-.3, 0, 0);
     const fill = new THREE.HemisphereLight(0x8a7a90, 0x120c0a, .35);
@@ -202,7 +204,8 @@ function start() {
       fig.traverse(o => { if (o.isMesh) { o.material = uniform; o.frustumCulled = false; } });
       fig.scale.setScalar(HEIGHT / 1.8); fig.updateMatrixWorld(true);   // the figure stands 1.8 m tall, feet at its origin
       const bone = n => fig.getObjectByName('mixamorig' + n);
-      const B = { hips: bone('Hips'), lUp: bone('LeftUpLeg'), rUp: bone('RightUpLeg'), lLeg: bone('LeftLeg'), rLeg: bone('RightLeg'), spine: bone('Spine'), head: bone('Head') };
+      const B = { hips: bone('Hips'), lUp: bone('LeftUpLeg'), rUp: bone('RightUpLeg'), lLeg: bone('LeftLeg'), rLeg: bone('RightLeg'), spine: bone('Spine'), head: bone('Head'),
+        arms: [['Left', 1], ['Right', -1]].map(([n, side]) => ({ side, up: bone(n + 'Arm'), fore: bone(n + 'ForeArm'), hand: bone(n + 'Hand') })) };
       // a pilot's cap on the head bone: crown, band and peak
       const capMat = new THREE.MeshStandardMaterial({ color: 0x14161f, roughness: .6 }), cap = new THREE.Group();
       const crown = new THREE.Mesh(new THREE.CylinderGeometry(.128, .112, .07, 28), capMat); crown.position.y = .055;
@@ -218,13 +221,37 @@ function start() {
     }, undefined, e => console.error(e));
   }
   const smooth = t => t * t * (3 - 2 * t);
+  // turn a bone so that its child (the next joint) points at a place in the world, blended by w
+  const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion();
+  function aimBone(bone, child, target, w) {
+    bone.getWorldPosition(_a); child.getWorldPosition(_b);
+    _b.sub(_a).normalize(); _c.copy(target).sub(_a).normalize();
+    _q.setFromUnitVectors(_b, _c);                            // the turn, in the world
+    bone.getWorldQuaternion(_q2); _q.multiply(_q2);           // the bone's new world rotation
+    bone.parent.getWorldQuaternion(_q2).invert(); _q.premultiply(_q2);
+    bone.quaternion.slerp(_q, w); bone.updateMatrixWorld(true);
+  }
+  // two-bone reach: the elbow goes where an arm of this length bends, out and down, then the forearm points at the hand
+  const _e = new THREE.Vector3(), _t = new THREE.Vector3(), _d = new THREE.Vector3(), _side = new THREE.Vector3();
+  function reach(arm, target, w, root) {
+    const S = arm.up.getWorldPosition(new THREE.Vector3()), E = arm.fore.getWorldPosition(new THREE.Vector3()), H = arm.hand.getWorldPosition(new THREE.Vector3());
+    const l1 = S.distanceTo(E), l2 = E.distanceTo(H);
+    _t.copy(target); _d.copy(_t).sub(S); const dist = Math.min(_d.length(), (l1 + l2) * .999); _d.normalize();
+    const a = Math.acos(clamp((l1 * l1 + dist * dist - l2 * l2) / (2 * l1 * dist), -1, 1));
+    _side.set(arm.side * .6, -1, 0).applyQuaternion(root.quaternion);   // elbows out to the side and down
+    _side.sub(_d.clone().multiplyScalar(_side.dot(_d))).normalize();
+    _e.copy(S).addScaledVector(_d, Math.cos(a) * l1).addScaledVector(_side, Math.sin(a) * l1);
+    aimBone(arm.up, arm.fore, _e, w);
+    _t.copy(S).addScaledVector(_d, dist);
+    aimBone(arm.fore, arm.hand, _t, w);
+  }
   // pose the captain at t seconds after he set off (t < 0: not here yet)
   function pilotAt(t, dt) {
     if (!pilot.ready) return;
     const { root, B, mixer, walk, idle } = pilot;
     if (t < 0) { root.visible = false; return; }
     root.visible = true;
-    const WALK = 3.6, STEP = 1.1, SIT = 1.4;                 // seconds: up the aisle, the step in, lowering into the seat
+    const WALK = 3.6, STEP = 1.1, SIT = 1.4, GRIP = 1.2;     // seconds: up the aisle, the step in, down into the seat, hands to the wheel
     let x, z, yaw = 0, sit = 0, wk;
     if (t < WALK) {                                          // up past your shoulder
       const k = t / WALK, a = Math.min(1, k * 1.6), b = Math.max(0, (k - .62) / .38);
@@ -242,6 +269,15 @@ function start() {
       B.lUp.rotation.x -= sit * 1.45; B.rUp.rotation.x -= sit * 1.45;
       B.lLeg.rotation.x += sit * 1.5; B.rLeg.rotation.x += sit * 1.5;
       B.spine.rotation.x -= sit * .12;
+    }
+    root.updateMatrixWorld(true);
+    const grip = smooth(clamp((t - WALK - STEP - SIT * .6) / GRIP));
+    if (grip > 0) {                                          // both hands on the horns of the wheel, with a small living movement
+      const sway = RM ? 0 : Math.sin(t * .7) * .006;
+      for (const arm of B.arms) {
+        _t.set(WHEEL.x - arm.side * .13, WHEEL.y + .03 + sway * arm.side, WHEEL.z);
+        reach(arm, _t, grip, root);
+      }
     }
   }
 
