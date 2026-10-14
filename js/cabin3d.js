@@ -180,7 +180,7 @@ function start() {
   }
 
   /* ---------- the captain: walks in from behind you, past your shoulder, and settles into the left seat.
-     A rigged figure ("X Bot" by Mixamo, from the three.js examples) in a dark uniform and cap, lit from behind by the
+     A rigged figure ("X Bot" by Mixamo, from the three.js examples) in a black suit with hair and a shirt collar, lit from behind by the
      evening sky in the windows, so mostly a silhouette with warm edges. The photo's own depth hides him behind the
      seat back. The walk is the figure's own walk cycle; the sitting down and the reach for the control wheel are posed
      by hand on top of it (two-bone reaching for each arm). ---------- */
@@ -196,23 +196,51 @@ function start() {
     ph.scene.add(sun, sun.target, fill, panel);
     new GLTFLoader().load('assets/models/pilot.glb', gltf => {
       const fig = gltf.scene, root = new THREE.Group(); root.add(fig);
-      // a near-black uniform; its edges catch the warm light of the windows, as a figure does against a dusk windscreen
-      const uniform = new THREE.MeshStandardMaterial({ color: 0x0d0e14, roughness: .9, metalness: 0 });
-      uniform.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
-        float rimL = pow(1. - abs(dot(normal, normalize(vViewPosition))), 5.);
-        totalEmissiveRadiance += vec3(1., .48, .2) * rimL * .45 * (.3 + .7 * smoothstep(-.2, .6, normal.y));`); };
-      fig.traverse(o => { if (o.isMesh) { o.material = uniform; o.frustumCulled = false; } });
       fig.scale.setScalar(HEIGHT / 1.8); fig.updateMatrixWorld(true);   // the figure stands 1.8 m tall, feet at its origin
+      // a man in a black suit: every vertex moved by the head, neck or hands is skin, the rest is cloth
+      const SKIN = /Head|Neck|Hand/;
+      fig.traverse(o => {
+        if (!o.isSkinnedMesh) return;
+        const bones = o.skeleton.bones, isSkin = bones.map(b => SKIN.test(b.name) ? 1 : 0);
+        const si = o.geometry.attributes.skinIndex, sw = o.geometry.attributes.skinWeight, m = new Float32Array(si.count);
+        for (let i = 0; i < si.count; i++) m[i] = isSkin[si.getX(i)] * sw.getX(i) + isSkin[si.getY(i)] * sw.getY(i) + isSkin[si.getZ(i)] * sw.getZ(i) + isSkin[si.getW(i)] * sw.getW(i);
+        o.geometry.setAttribute('skinMask', new THREE.BufferAttribute(m, 1));
+        const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .82, metalness: 0 });
+        mat.onBeforeCompile = sh => {
+          sh.vertexShader = 'attribute float skinMask; varying float vSkin;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vSkin = skinMask;');
+          sh.fragmentShader = 'varying float vSkin;\n' + sh.fragmentShader
+            .replace('#include <color_fragment>', `#include <color_fragment>
+              float sk = smoothstep(.55, .9, vSkin);
+              diffuseColor.rgb = mix(vec3(.018, .018, .022), vec3(.52, .33, .24), sk);   // black wool, warm skin`)
+            .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n  roughnessFactor = mix(.78, .55, smoothstep(.55, .9, vSkin));')
+            .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+              float rimL = pow(1. - abs(dot(normal, normalize(vViewPosition))), 4.);
+              totalEmissiveRadiance += vec3(1., .5, .24) * rimL * .22 * (.3 + .7 * smoothstep(-.2, .6, normal.y));`);
+        };
+        o.material = mat; o.frustumCulled = false;
+      });
       const bone = n => fig.getObjectByName('mixamorig' + n);
       const B = { hips: bone('Hips'), lUp: bone('LeftUpLeg'), rUp: bone('RightUpLeg'), lLeg: bone('LeftLeg'), rLeg: bone('RightLeg'), spine: bone('Spine'), head: bone('Head'),
         arms: [['Left', 1], ['Right', -1]].map(([n, side]) => ({ side, up: bone(n + 'Arm'), fore: bone(n + 'ForeArm'), hand: bone(n + 'Hand') })) };
-      // a pilot's cap on the head bone: crown, band and peak
-      const capMat = new THREE.MeshStandardMaterial({ color: 0x14161f, roughness: .6 }), cap = new THREE.Group();
-      const crown = new THREE.Mesh(new THREE.CylinderGeometry(.128, .112, .07, 28), capMat); crown.position.y = .055;
-      const band = new THREE.Mesh(new THREE.CylinderGeometry(.114, .114, .022, 28), new THREE.MeshStandardMaterial({ color: 0xc9a14a, roughness: .35, metalness: .6 })); band.position.y = .028;
-      const peak = new THREE.Mesh(new THREE.CylinderGeometry(.13, .13, .008, 28, 1, false, -1.1, 2.2), capMat); peak.position.set(0, .016, .03); peak.scale.z = .8;
-      cap.add(crown, band, peak);
-      const s = fig.scale.x / B.head.getWorldScale(new THREE.Vector3()).x; cap.scale.setScalar(s * .9); cap.position.y = .118 * s; cap.rotation.x = -.08; B.head.add(cap);
+      // short dark hair over the top and back of the head, with fine strands; a white shirt collar at the neck
+      const s = fig.scale.x / B.head.getWorldScale(new THREE.Vector3()).x;
+      const hairMat = new THREE.MeshStandardMaterial({ color: 0x1c130e, roughness: .6, transparent: true });
+      hairMat.onBeforeCompile = sh => {
+        sh.vertexShader = 'varying float vHv;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vHv = uv.y;');
+        sh.fragmentShader = 'varying float vHv;\n' + sh.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
+        float st = sin(vViewPosition.x * 2400. + vViewPosition.y * 700.) * .5 + .5;
+        diffuseColor.rgb *= .88 + .2 * st;
+        diffuseColor.a *= smoothstep(.0, .16, vHv + (st - .5) * .04);   // a soft, uneven hairline, not the edge of a helmet`); };
+      const ht = bone('HeadTop_End').position.length();      // the head's height, in the head bone's own units
+      const hair = new THREE.Mesh(new THREE.SphereGeometry(1, 40, 24, 0, Math.PI * 2, 0, Math.PI * .6), hairMat);
+      hair.scale.set(ht * .62, ht * .64, ht * .68); hair.position.set(0, ht * .52, -ht * .05); hair.rotation.x = -.3; B.head.add(hair);
+      // ears, a little forward of the middle of the head
+      const skinMat = new THREE.MeshStandardMaterial({ color: 0x8a5a44, roughness: .6 });
+      for (const sx of [-1, 1]) { const ear = new THREE.Mesh(new THREE.SphereGeometry(.03, 16, 12), skinMat);
+        ear.scale.set(ht * .1, ht * .3, ht * .2).divideScalar(.03); ear.position.set(sx * ht * .47, ht * .42, 0); ear.rotation.z = sx * .12; B.head.add(ear); }
+      // a white shirt collar showing above the jacket at the back of the neck
+      const collar = new THREE.Mesh(new THREE.CylinderGeometry(.058, .064, .018, 32, 1, true, Math.PI * .35, Math.PI * 1.3), new THREE.MeshStandardMaterial({ color: 0xd8d2c8, roughness: .7, side: THREE.DoubleSide }));
+      collar.scale.setScalar(ht / .2); collar.position.set(0, -ht * .12, -ht * .02); collar.rotation.y = Math.PI; B.head.add(collar);
       const mixer = new THREE.AnimationMixer(fig), clip = n => gltf.animations.find(a => a.name === n);
       const walk = mixer.clipAction(clip('walk')), idle = mixer.clipAction(clip('idle'));
       walk.play(); idle.play(); idle.setEffectiveWeight(0);
