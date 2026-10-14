@@ -75,7 +75,12 @@ function start() {
   function powerUp(ph, mat) {
     mat.onBeforeCompile = sh => {
       sh.uniforms.time = deckU.time;
-      sh.fragmentShader = 'uniform float time;\n' + sh.fragmentShader.replace('#include <map_fragment>', `
+      sh.fragmentShader = `uniform float time;
+        float dh(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+        float dn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f);
+          return mix(mix(dh(i), dh(i + vec2(1., 0.)), f.x), mix(dh(i + vec2(0., 1.)), dh(i + 1.), f.x), f.y); }
+        float dfbm(vec2 p){ float v = 0., a = .5; for (int i = 0; i < 5; i++){ v += a * dn(p); p = p * 2.07 + 13.1; a *= .5; } return v; }
+` + sh.fragmentShader.replace('#include <map_fragment>', `
         vec4 texel = texture2D(map, vUv);
         vec3 c = texel.rgb;                                  // linear colour of the photo
         vec2 q = vec2(vUv.x, 1. - vUv.y);                    // image coordinates, 0,0 top left
@@ -87,9 +92,16 @@ function start() {
         float hz = smoothstep(.1, .3, q.y);
         vec3 sky = mix(vec3(.012, .02, .07), vec3(.5, .16, .05), pow(hz, 2.2));
         sky = mix(sky, vec3(.85, .38, .12), smoothstep(.26, .3, q.y) * .6);
-        vec2 g = floor(vec2(q.x * 260., q.y * 900.));                        // far apron and runway lights near the horizon
-        float h = fract(sin(dot(g, vec2(12.9898, 78.233))) * 43758.5453);
-        float lit = step(.965, h) * smoothstep(.255, .27, q.y) * (1. - smoothstep(.29, .305, q.y));
+        // dusk clouds drifting past: dark against the sky above, their undersides lit by the sun below the horizon
+        vec2 cq = vec2(q.x * 3.2 + time * .018, q.y * 9. + q.y * q.y * 30.);   // flatter and denser towards the horizon
+        float cn = dfbm(cq + vec2(dfbm(cq * .6 + time * .01) * 1.3, 0.));
+        float cov = smoothstep(.4, .6, cn) * (1. - smoothstep(.25, .29, q.y)) * smoothstep(.1, .14, q.y);
+        float rim = smoothstep(.4, .5, cn) - smoothstep(.5, .7, cn);                   // thin edges catch the light
+        vec3 cloud = mix(vec3(.012, .012, .03), vec3(.1, .035, .03), hz) + vec3(1., .42, .15) * (rim * 1.5 + .15) * pow(hz, 2.) * .9;
+        sky = mix(sky, cloud, cov * .92);
+        vec2 g = floor(vec2(q.x * 320., q.y * 213.));                        // far apron and runway lights near the horizon
+        float h = dh(g), dotp = 1. - smoothstep(.12, .3, length(fract(vec2(q.x * 320., q.y * 213.)) - .5));
+        float lit = step(.93, h) * dotp * smoothstep(.258, .268, q.y) * (1. - smoothstep(.295, .305, q.y));
         sky += lit * mix(vec3(1., .55, .2), vec3(.5, .8, 1.), step(.99, h)) * (.6 + .4 * sin(time * (1. + h * 3.) + h * 40.)) * 1.4;
         c = mix(c, sky + c * .05, win);
         // the cabin at dusk: dim, a little cool; the panel lit by floodlights under the glareshield
