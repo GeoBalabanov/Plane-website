@@ -180,7 +180,7 @@ function start() {
   }
 
   /* ---------- the captain: walks in from behind you, past your shoulder, and settles into the left seat.
-     A rigged figure ("X Bot" by Mixamo, from the three.js examples) in a black suit with hair and a shirt collar, lit from behind by the
+     A man built on the skeleton of a rigged figure ("X Bot" by Mixamo, from the three.js examples), lit from behind by the
      evening sky in the windows, so mostly a silhouette with warm edges. The photo's own depth hides him behind the
      seat back. The walk is the figure's own walk cycle; the sitting down and the reach for the control wheel are posed
      by hand on top of it (two-bone reaching for each arm). ---------- */
@@ -189,6 +189,85 @@ function start() {
   const PATH = [[-.2, .55], [-.3, -.75], [-.36, -1.12]];    // x, z: from behind the camera, up past the seat, to its side
   const SEAT = [-.5, -1.42];                                 // where he sits, facing the panel
   const WHEEL = new THREE.Vector3(-.5, -.12, -1.9);          // the captain's control wheel, in front of his seat
+  /* the man, built on the figure's skeleton: a black suit (jacket with shoulders and a hem, sleeves, trousers, shoes),
+     a white collar, a head in proportion with ears, and a messy haircut of uneven tufts. Sizes are in metres of a
+     1.8 m man; every piece rides on its bone, so it walks, sits and reaches with him. */
+  function dress(fig, bone) {
+    const k = fig.scale.x / bone('Hips').getWorldScale(new THREE.Vector3()).x;   // bone units per metre
+    const rim = m => { m.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+      float rimL = pow(1. - abs(dot(normal, normalize(vViewPosition))), 4.);
+      totalEmissiveRadiance += vec3(1., .5, .24) * rimL * .28 * (.3 + .7 * smoothstep(-.2, .6, normal.y));`); }; return m; };
+    const suit = rim(new THREE.MeshStandardMaterial({ color: 0x0c0c0f, roughness: .82 }));
+    const skin = rim(new THREE.MeshStandardMaterial({ color: 0x9a6a52, roughness: .62 }));
+    const shirt = rim(new THREE.MeshStandardMaterial({ color: 0xd9d3c9, roughness: .7 }));
+    const shoe = new THREE.MeshStandardMaterial({ color: 0x050506, roughness: .35 });
+    const Y = new THREE.Vector3(0, 1, 0);
+    // a tapered tube from a bone to its child, with a ball at the joint so bends stay closed
+    const tube = (b, child, r0, r1, mat, sx = 1, sz = 1, extend = 0) => {
+      const d = child.position.clone(), len = d.length() * (1 + extend);
+      const m = new THREE.Mesh(new THREE.CylinderGeometry(r1 * k, r0 * k, len, 24, 1, true), mat);
+      m.position.copy(d).multiplyScalar(.5 * (1 + extend)); m.quaternion.setFromUnitVectors(Y, d.normalize()); m.scale.set(sx, 1, sz);
+      const j = new THREE.Mesh(new THREE.SphereGeometry(r0 * k, 24, 16), mat); j.scale.set(sx, sx, sz);
+      b.add(m, j); return m;
+    };
+    // jacket: the spine as an oval tube, broad across the shoulders, with a hem over the hips
+    tube(bone('Hips'), bone('Spine'), .165, .16, suit, 1, .7);
+    tube(bone('Spine'), bone('Spine1'), .16, .165, suit, 1, .68);
+    tube(bone('Spine1'), bone('Spine2'), .165, .18, suit, 1, .66);
+    tube(bone('Spine2'), bone('Neck'), .18, .1, suit, 1.05, .62);
+    const hem = new THREE.Mesh(new THREE.CylinderGeometry(.168 * k, .175 * k, .2 * k, 24, 1, true), suit); hem.scale.set(1, 1, .72); hem.position.y = -.07 * k; bone('Hips').add(hem);
+    fig.updateMatrixWorld(true);
+    const sp2 = bone('Spine2'), L = sp2.worldToLocal(bone('LeftArm').getWorldPosition(new THREE.Vector3())), R = sp2.worldToLocal(bone('RightArm').getWorldPosition(new THREE.Vector3()));
+    const sh = new THREE.Mesh(new THREE.CapsuleGeometry(.075 * k, L.distanceTo(R), 8, 20), suit);   // padded shoulders
+    sh.position.copy(L).add(R).multiplyScalar(.5); sh.position.y -= .02 * k; sh.quaternion.setFromUnitVectors(Y, R.clone().sub(L).normalize()); sh.scale.set(1, 1, .8); sp2.add(sh);
+    for (const side of ['Left', 'Right']) {
+      tube(bone(side + 'Shoulder'), bone(side + 'Arm'), .07, .068, suit);
+      tube(bone(side + 'Arm'), bone(side + 'ForeArm'), .06, .052, suit);                 // sleeves
+      tube(bone(side + 'ForeArm'), bone(side + 'Hand'), .05, .045, suit);
+      const cuff = new THREE.Mesh(new THREE.CylinderGeometry(.04 * k, .04 * k, .02 * k, 20, 1, true), shirt); bone(side + 'Hand').add(cuff);
+      const hand = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), skin);           // a hand, fingers together
+      hand.scale.set(.045 * k, .07 * k, .026 * k); hand.position.y = .06 * k; bone(side + 'Hand').add(hand);
+      const thumb = new THREE.Mesh(new THREE.CapsuleGeometry(.011 * k, .035 * k, 4, 10), skin); thumb.position.set((side === 'Left' ? 1 : -1) * .03 * k, .04 * k, .015 * k); thumb.rotation.z = side === 'Left' ? -.6 : .6; bone(side + 'Hand').add(thumb);
+      tube(bone(side + 'UpLeg'), bone(side + 'Leg'), .085, .062, suit);                  // trousers
+      tube(bone(side + 'Leg'), bone(side + 'Foot'), .058, .05, suit, 1, 1, .04);
+      const foot = new THREE.Mesh(new THREE.CapsuleGeometry(.042 * k, .17 * k, 6, 14), shoe);
+      foot.position.copy(bone(side + 'ToeBase').position).multiplyScalar(.45); foot.quaternion.setFromUnitVectors(Y, bone(side + 'ToeBase').position.clone().normalize()); foot.scale.set(1.05, 1, .75);
+      bone(side + 'Foot').add(foot);
+    }
+    // neck, collar and head
+    tube(bone('Neck'), bone('Head'), .054, .052, skin);
+    const collar = new THREE.Mesh(new THREE.CylinderGeometry(.058 * k, .066 * k, .05 * k, 28, 1, true), shirt); collar.position.y = .055 * k; bone('Neck').add(collar);
+    const lapel = new THREE.Mesh(new THREE.TorusGeometry(.075 * k, .016 * k, 10, 28), suit); lapel.rotation.x = Math.PI / 2; lapel.scale.set(1, .85, 1); lapel.position.y = .02 * k; bone('Neck').add(lapel);
+    const H = bone('Head'), head = new THREE.Mesh(new THREE.SphereGeometry(1, 40, 28), skin);
+    head.scale.set(.076 * k, .108 * k, .095 * k); head.position.set(0, .085 * k, .012 * k); H.add(head);
+    const jaw = new THREE.Mesh(new THREE.SphereGeometry(1, 28, 20), skin); jaw.scale.set(.062 * k, .06 * k, .07 * k); jaw.position.set(0, .02 * k, .03 * k); H.add(jaw);
+    for (const sx of [-1, 1]) { const ear = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), skin);
+      ear.scale.set(.012 * k, .03 * k, .02 * k); ear.position.set(sx * .075 * k, .08 * k, -.005 * k); ear.rotation.y = sx * .35; H.add(ear); }
+    // messy hair: a dark base over the scalp and dozens of uneven tufts falling every way
+    const hairMat = new THREE.MeshStandardMaterial({ color: 0x241811, roughness: .55 });
+    const base = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 20, 0, Math.PI * 2, 0, Math.PI * .6), hairMat);
+    base.scale.set(.08 * k, .106 * k, .099 * k); base.position.set(0, .092 * k, .006 * k); base.rotation.x = -.62; H.add(base);
+    const N = 170, tufts = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 10, 8), hairMat, N), M = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler();
+    let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const c = new THREE.Vector3(0, .09 * k, .006 * k), v = new THREE.Vector3(), out = new THREE.Vector3(), sc = new THREE.Vector3(), flow = new THREE.Vector3();
+    for (let i = 0; i < N; i++) {
+      // the top, sides and back of the head down to the nape; the face stays clear
+      let th = rnd() * Math.PI * 2, ph = Math.acos(1 - rnd() * 1.25);
+      v.set(Math.sin(ph) * Math.cos(th), Math.cos(ph), Math.sin(ph) * Math.sin(th));
+      if (v.z > .25 && v.y < .7) { i--; continue; }
+      out.copy(v).normalize();
+      const p = c.clone().add(new THREE.Vector3(out.x * .081 * k, out.y * .108 * k, out.z * .1 * k));
+      // each clump lies along the scalp, combed loosely back and down, every one a little different
+      flow.set((rnd() - .5) * 1.6, -.2 + (rnd() - .5) * .8, -1 + (rnd() - .5) * 1.2);
+      flow.sub(out.clone().multiplyScalar(flow.dot(out))).normalize();
+      flow.addScaledVector(out, .25 + rnd() * .35).normalize();                    // and lifts off it: messy, not combed flat
+      q.setFromUnitVectors(Y, flow);
+      const len = (.022 + rnd() * .028) * k, w = (.011 + rnd() * .01) * k; sc.set(w, len, w * .55);
+      M.compose(p, q, sc); tufts.setMatrixAt(i, M);
+      tufts.setColorAt(i, new THREE.Color(0x241811).multiplyScalar(.7 + rnd() * .6));
+    }
+    H.add(tufts);
+  }
   function addPilot(ph) {
     const sun = new THREE.DirectionalLight(0xff9a5c, 2.6); sun.position.set(-.4, 1.2, -4); sun.target.position.set(-.3, 0, 0);
     const fill = new THREE.HemisphereLight(0x8a7a90, 0x120c0a, .35);
@@ -197,50 +276,11 @@ function start() {
     new GLTFLoader().load('assets/models/pilot.glb', gltf => {
       const fig = gltf.scene, root = new THREE.Group(); root.add(fig);
       fig.scale.setScalar(HEIGHT / 1.8); fig.updateMatrixWorld(true);   // the figure stands 1.8 m tall, feet at its origin
-      // a man in a black suit: every vertex moved by the head, neck or hands is skin, the rest is cloth
-      const SKIN = /Head|Neck|Hand/;
-      fig.traverse(o => {
-        if (!o.isSkinnedMesh) return;
-        const bones = o.skeleton.bones, isSkin = bones.map(b => SKIN.test(b.name) ? 1 : 0);
-        const si = o.geometry.attributes.skinIndex, sw = o.geometry.attributes.skinWeight, m = new Float32Array(si.count);
-        for (let i = 0; i < si.count; i++) m[i] = isSkin[si.getX(i)] * sw.getX(i) + isSkin[si.getY(i)] * sw.getY(i) + isSkin[si.getZ(i)] * sw.getZ(i) + isSkin[si.getW(i)] * sw.getW(i);
-        o.geometry.setAttribute('skinMask', new THREE.BufferAttribute(m, 1));
-        const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .82, metalness: 0 });
-        mat.onBeforeCompile = sh => {
-          sh.vertexShader = 'attribute float skinMask; varying float vSkin;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vSkin = skinMask;');
-          sh.fragmentShader = 'varying float vSkin;\n' + sh.fragmentShader
-            .replace('#include <color_fragment>', `#include <color_fragment>
-              float sk = smoothstep(.55, .9, vSkin);
-              diffuseColor.rgb = mix(vec3(.018, .018, .022), vec3(.52, .33, .24), sk);   // black wool, warm skin`)
-            .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n  roughnessFactor = mix(.78, .55, smoothstep(.55, .9, vSkin));')
-            .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
-              float rimL = pow(1. - abs(dot(normal, normalize(vViewPosition))), 4.);
-              totalEmissiveRadiance += vec3(1., .5, .24) * rimL * .22 * (.3 + .7 * smoothstep(-.2, .6, normal.y));`);
-        };
-        o.material = mat; o.frustumCulled = false;
-      });
+      fig.traverse(o => { if (o.isMesh) o.visible = false; });          // only its skeleton is used: the man is built on it below
       const bone = n => fig.getObjectByName('mixamorig' + n);
       const B = { hips: bone('Hips'), lUp: bone('LeftUpLeg'), rUp: bone('RightUpLeg'), lLeg: bone('LeftLeg'), rLeg: bone('RightLeg'), spine: bone('Spine'), head: bone('Head'),
         arms: [['Left', 1], ['Right', -1]].map(([n, side]) => ({ side, up: bone(n + 'Arm'), fore: bone(n + 'ForeArm'), hand: bone(n + 'Hand') })) };
-      // short dark hair over the top and back of the head, with fine strands; a white shirt collar at the neck
-      const s = fig.scale.x / B.head.getWorldScale(new THREE.Vector3()).x;
-      const hairMat = new THREE.MeshStandardMaterial({ color: 0x1c130e, roughness: .6, transparent: true });
-      hairMat.onBeforeCompile = sh => {
-        sh.vertexShader = 'varying float vHv;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vHv = uv.y;');
-        sh.fragmentShader = 'varying float vHv;\n' + sh.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
-        float st = sin(vViewPosition.x * 2400. + vViewPosition.y * 700.) * .5 + .5;
-        diffuseColor.rgb *= .88 + .2 * st;
-        diffuseColor.a *= smoothstep(.0, .16, vHv + (st - .5) * .04);   // a soft, uneven hairline, not the edge of a helmet`); };
-      const ht = bone('HeadTop_End').position.length();      // the head's height, in the head bone's own units
-      const hair = new THREE.Mesh(new THREE.SphereGeometry(1, 40, 24, 0, Math.PI * 2, 0, Math.PI * .6), hairMat);
-      hair.scale.set(ht * .62, ht * .64, ht * .68); hair.position.set(0, ht * .52, -ht * .05); hair.rotation.x = -.3; B.head.add(hair);
-      // ears, a little forward of the middle of the head
-      const skinMat = new THREE.MeshStandardMaterial({ color: 0x8a5a44, roughness: .6 });
-      for (const sx of [-1, 1]) { const ear = new THREE.Mesh(new THREE.SphereGeometry(.03, 16, 12), skinMat);
-        ear.scale.set(ht * .1, ht * .3, ht * .2).divideScalar(.03); ear.position.set(sx * ht * .47, ht * .42, 0); ear.rotation.z = sx * .12; B.head.add(ear); }
-      // a white shirt collar showing above the jacket at the back of the neck
-      const collar = new THREE.Mesh(new THREE.CylinderGeometry(.058, .064, .018, 32, 1, true, Math.PI * .35, Math.PI * 1.3), new THREE.MeshStandardMaterial({ color: 0xd8d2c8, roughness: .7, side: THREE.DoubleSide }));
-      collar.scale.setScalar(ht / .2); collar.position.set(0, -ht * .12, -ht * .02); collar.rotation.y = Math.PI; B.head.add(collar);
+      dress(fig, bone);
       const mixer = new THREE.AnimationMixer(fig), clip = n => gltf.animations.find(a => a.name === n);
       const walk = mixer.clipAction(clip('walk')), idle = mixer.clipAction(clip('idle'));
       walk.play(); idle.play(); idle.setEffectiveWeight(0);
