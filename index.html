@@ -341,7 +341,6 @@
           <div class="certificate-bottom"><div class="certificate-copy">London Heathrow → New York JFK<span class="cert-signature">A transatlantic journey</span></div><div class="cert-seal" aria-label="Mach 2 souvenir">MACH 2<br>CONCORDE<br>LHR · JFK</div></div>
           <p class="cert-note">Souvenir of a virtual flight · Human Centered Design student project</p>
         </article>
-        <div class="certificate-actions"><button id="certificate-print" type="button">Print / save certificate</button><span>Choose “Save as PDF” in the print window.</span></div>
       </section>
 
       <div class="credits label">
@@ -383,14 +382,10 @@
   document.getElementById('seats').addEventListener('change', () => sync());
   addEventListener('pageshow', () => sync());
   addEventListener('concorde:passenger', e => sync(e.detail));
-  document.getElementById('certificate-print').addEventListener('click', () => {
-    sync();
-    const win = window.open('', '_blank', 'width=1100,height=800');
-    if (!win) { alert('Please allow pop-ups to print your certificate.'); return; }
-    win.document.write('<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Concorde flight certificate</title><style>:root{--mono:monospace}*{box-sizing:border-box}body{margin:24px}p{margin:0}' +
-      document.getElementById('certificate-styles').textContent + '</style></head><body>' + paper.outerHTML + '
+
+})();
+</script>
 <script>
-/* On short screens, show the approach only when the moving pass has cleared it. */
 (() => {
   const arrival = document.getElementById('arrival');
   const ticket = document.getElementById('ticket');
@@ -410,14 +405,5 @@
   }).observe(arrival);
 })();
 </script>
-
-</body></html>');
-    win.document.close();
-    win.focus();
-    win.addEventListener('load', () => { win.print(); }, {once:true});
-  });
-})();
-</script>
 </body>
 </html>
-
