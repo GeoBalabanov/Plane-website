@@ -63,9 +63,102 @@ function start() {
     const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 1, depthWrite: true });
     const scene = new THREE.Scene(); scene.add(new THREE.Mesh(geo, mat));
     photos[name] = { scene, mat, point: (u, v) => point(u, 1 - v) };
+    if (name === 'deck') powerUp(photos.deck, mat);
     dirty = true;
   }
   ['aisle', 'cabin', 'mach', 'deck'].forEach(n => build(n).catch(e => console.error(e)));
+
+  /* ---------- the flight deck, powered up at dusk before departure: the photo was taken in a museum hangar, so the
+     cabin is dimmed, evening sky and apron lights fill the windows, the instruments are backlit, warning and status
+     lights glow (a few blink), the weather radar sweeps and dust drifts in the light from the windows ---------- */
+  const deckU = { time: { value: 0 } };
+  function powerUp(ph, mat) {
+    mat.onBeforeCompile = sh => {
+      sh.uniforms.time = deckU.time;
+      sh.fragmentShader = 'uniform float time;\n' + sh.fragmentShader.replace('#include <map_fragment>', `
+        vec4 texel = texture2D(map, vUv);
+        vec3 c = texel.rgb;                                  // linear colour of the photo
+        vec2 q = vec2(vUv.x, 1. - vUv.y);                    // image coordinates, 0,0 top left
+        float lum = dot(c, vec3(.2126, .7152, .0722));
+        // the windows: bright hangar wall and white daylight become an evening sky over the airfield
+        float win = max(step(.18, q.x) * step(q.x, .82) * step(.105, q.y) * step(q.y, .31),
+                    max(step(q.x, .15) * step(.07, q.y) * step(q.y, .41), step(.8, q.x) * step(q.x, .9) * step(.14, q.y) * step(q.y, .42)));
+        win *= smoothstep(.2, .42, lum);
+        float hz = smoothstep(.1, .3, q.y);
+        vec3 sky = mix(vec3(.012, .02, .07), vec3(.5, .16, .05), pow(hz, 2.2));
+        sky = mix(sky, vec3(.85, .38, .12), smoothstep(.26, .3, q.y) * .6);
+        vec2 g = floor(vec2(q.x * 260., q.y * 900.));                        // far apron and runway lights near the horizon
+        float h = fract(sin(dot(g, vec2(12.9898, 78.233))) * 43758.5453);
+        float lit = step(.965, h) * smoothstep(.255, .27, q.y) * (1. - smoothstep(.29, .305, q.y));
+        sky += lit * mix(vec3(1., .55, .2), vec3(.5, .8, 1.), step(.99, h)) * (.6 + .4 * sin(time * (1. + h * 3.) + h * 40.)) * 1.4;
+        c = mix(c, sky + c * .05, win);
+        // the cabin at dusk: dim, a little cool; the panel lit by floodlights under the glareshield
+        vec3 base = c * vec3(.3, .32, .38);
+        float panel = step(.25, q.x) * step(q.x, .78) * step(.36, q.y) * step(q.y, .7);
+        float flood = panel * (1. - smoothstep(.37, .62, q.y)) * (1. - smoothstep(.2, .3, abs(q.x - .51))) ;
+        base += c * vec3(1., .78, .5) * flood * .55;
+        // backlit instruments: the white markings and needles on the dials glow warm
+        float zone = max(panel, max(step(.33, q.x) * step(q.x, .67) * step(.26, q.y) * step(q.y, .36),
+                     max(step(.33, q.x) * step(q.x, .67) * step(q.y, .12), step(.84, q.x) * step(.18, q.y))));
+        base += c * vec3(1.15, .92, .66) * smoothstep(.32, .75, lum) * zone * 1.1;
+        // coloured faces (the attitude spheres, flags) keep their colour, lit from within
+        float sat = (max(c.r, max(c.g, c.b)) - min(c.r, min(c.g, c.b))) / max(max(c.r, max(c.g, c.b)), .001);
+        base += c * smoothstep(.45, .7, sat) * smoothstep(.12, .35, lum) * zone * .9;
+        // the digital readouts on the glareshield: amber numbers
+        float ro = 0.;
+        ro += step(.343, q.x) * step(q.x, .372) * step(.313, q.y) * step(q.y, .331);
+        ro += step(.632, q.x) * step(q.x, .662) * step(.313, q.y) * step(q.y, .331);
+        ro += step(.452, q.x) * step(q.x, .497) * step(.322, q.y) * step(q.y, .338);
+        ro += step(.535, q.x) * step(q.x, .588) * step(.322, q.y) * step(q.y, .338);
+        base += vec3(1., .5, .12) * smoothstep(.3, .7, lum) * ro * 2.5;
+        // the weather radar: a green sweep with returns
+        vec2 rc = (q - vec2(.398, .522)) * vec2(1.5, 1.);
+        float inCrt = step(abs(q.x - .398), .014) * step(abs(q.y - .52), .022);
+        float ang = atan(rc.y, rc.x), sweep = fract((ang - time * 1.4) / 6.2832);
+        float trail = pow(1. - sweep, 6.), rr = length(rc) / .03;
+        float ret = step(.62, fract(sin(dot(floor(vec2(ang * 9., rr * 7.)), vec2(7.1, 3.7))) * 9137.)) * step(.35, rr);
+        float scope = 1. - smoothstep(.9, 1.05, rr);                         // the round screen inside its square bezel
+        vec3 crt = vec3(.004, .018, .008) + vec3(.08, .7, .25) * scope * (trail * (.08 + ret * .9) + exp(-sweep * 160.) * .35 + step(abs(fract(rr * 3.) - .5), .02) * .05);
+        base = mix(base, crt, inCrt * smoothstep(.0, .25, 1. - lum * 1.4 + .5));
+        c = mix(base, c, win);
+        diffuseColor *= vec4(c, texel.a);`);
+    };
+    // lights: [x, y in the photo, colour, size, blink] - status lights, warnings, the overhead annunciators
+    const AMB = [1, .55, .12], GRN = [.3, 1, .45], RED = [1, .15, .1], WHT = [1, .88, .7], BLU = [.35, .6, 1];
+    const L = [[.308, .43, AMB, 1, 0], [.685, .43, AMB, 1, 0], [.733, .432, AMB, 1, 0], [.423, .448, AMB, .7, 0], [.423, .463, BLU, .6, 0],
+      [.448, .292, GRN, .8, 0], [.473, .292, GRN, .8, 0], [.497, .308, GRN, .9, 0], [.522, .308, WHT, .7, 0], [.548, .292, AMB, .7, 0], [.572, .308, GRN, .8, 0],
+      [.598, .49, RED, .7, 0], [.609, .49, AMB, .6, 0], [.62, .49, RED, .7, 1.3],
+      [.38, .093, WHT, .6, 0], [.41, .093, AMB, .6, 0], [.45, .093, WHT, .6, 0], [.485, .093, WHT, .6, 0], [.52, .093, AMB, .6, 0], [.555, .093, WHT, .6, 0], [.59, .093, WHT, .6, 0], [.625, .093, AMB, .6, 2.1],
+      [.905, .07, GRN, .8, 0], [.95, .35, AMB, .8, .9], [.92, .6, GRN, .8, 0], [.97, .75, AMB, .8, 0], [.88, .45, WHT, .6, 0],
+      [.45, .69, GRN, .6, 0], [.57, .69, AMB, .6, 0], [.48, .7, WHT, .5, 0], [.59, .7, WHT, .5, 0]];
+    const pos = [], col = [], siz = [], blk = [];
+    for (const [x, y, k, sz, b] of L) { const v = ph.point(x, y).multiplyScalar(.985); pos.push(v.x, v.y, v.z); col.push(...k); siz.push(sz); blk.push(b); }
+    const lg = new THREE.BufferGeometry();
+    lg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); lg.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    lg.setAttribute('size', new THREE.Float32BufferAttribute(siz, 1)); lg.setAttribute('blink', new THREE.Float32BufferAttribute(blk, 1));
+    const glow = new THREE.ShaderMaterial({ uniforms: { time: deckU.time, opacity: { value: 1 }, px: { value: 1 } }, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending,
+      vertexShader: `attribute vec3 color; attribute float size, blink; uniform float time, px; varying vec3 vC; varying float vB;
+        void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.); gl_Position = projectionMatrix * mv;
+          vC = color; vB = blink > 0. ? step(.5, fract(time / blink)) * .85 + .15 : .92 + .08 * sin(time * 3. + position.x * 40.);
+          gl_PointSize = size * px * 9. / -mv.z; }`,
+      fragmentShader: `uniform float opacity; varying vec3 vC; varying float vB;
+        void main(){ float r = length(gl_PointCoord - .5) * 2.; float core = exp(-r * r * 30.), halo = exp(-r * r * 4.5) * .35;
+          gl_FragColor = vec4((vC * (core * 2.2 + halo) + core * .5) * vB * opacity, 1.); }` });
+    const lights = new THREE.Points(lg, glow); lights.frustumCulled = false; lights.renderOrder = 2; ph.scene.add(lights);
+    // dust in the air of the flight deck, catching the light from the windows
+    const DN = 260, dp = new Float32Array(DN * 3), ds = new Float32Array(DN);
+    for (let i = 0; i < DN; i++) { dp[i * 3] = (Math.random() - .5) * 2.4; dp[i * 3 + 1] = (Math.random() - .5) * 1.4; dp[i * 3 + 2] = -.35 - Math.random() * 2.2; ds[i] = Math.random(); }
+    const dg = new THREE.BufferGeometry(); dg.setAttribute('position', new THREE.BufferAttribute(dp, 3)); dg.setAttribute('seed', new THREE.BufferAttribute(ds, 1));
+    const dust = new THREE.Points(dg, new THREE.ShaderMaterial({ uniforms: { time: deckU.time, opacity: glow.uniforms.opacity, px: glow.uniforms.px }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+      vertexShader: `attribute float seed; uniform float time, px; varying float vA;
+        void main(){ vec3 p = position + vec3(sin(time * .13 + seed * 40.) * .06, mod(seed * 1.4 - time * .012, 1.4) - .7 - position.y, cos(time * .11 + seed * 23.) * .05);
+          vec4 mv = modelViewMatrix * vec4(p, 1.); gl_Position = projectionMatrix * mv;
+          vA = smoothstep(-.2, .5, p.y) * (.4 + .6 * sin(time * .7 + seed * 60.) * .5 + .3);
+          gl_PointSize = px * (1.2 + seed * 1.6) * .25 / -mv.z; }`,
+      fragmentShader: `uniform float opacity; varying float vA; void main(){ float r = length(gl_PointCoord - .5) * 2.; gl_FragColor = vec4(vec3(1., .78, .55) * exp(-r * r * 3.) * vA * .22 * opacity, 1.); }` }));
+    dust.frustumCulled = false; dust.renderOrder = 1; ph.scene.add(dust);
+    ph.glow = glow;
+  }
 
   function resize() {
     const w = canvas.clientWidth, h = canvas.clientHeight; if (!w || !h) return;
@@ -252,6 +345,8 @@ function start() {
   let lastP = -1, lastT = 0;
   function frame(t) {
     requestAnimationFrame(frame);
+    deckU.time.value = RM ? 0 : t / 1000;
+    if (photos.deck && photos.deck.glow) { photos.deck.glow.uniforms.opacity.value = photos.deck.mat.opacity; photos.deck.glow.uniforms.px.value = renderer.getPixelRatio() * canvas.clientHeight / 900 * 10; }
     const r = section.getBoundingClientRect(); if (r.bottom <= 0 || r.top >= innerHeight) return;
     const span = section.offsetHeight - innerHeight, p = span > 0 ? clamp(-r.top / span) : 0;
     const dt = Math.min(.05, (t - lastT) / 1000 || .016); lastT = t;
