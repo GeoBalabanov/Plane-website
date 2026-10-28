@@ -685,7 +685,8 @@ function start() {
   const ABOVE = shot(-100, 34, 66, 0, 1, 9, 18);           // side on over the sea of cloud
   let dirty = true;
   const tl = gsap.timeline({ defaults: { ease: 'power2.inOut' }, onUpdate: () => { dirty = true; },
-    scrollTrigger: { trigger: section, start: 'top top', end: 'bottom bottom', scrub: RM ? true : .6 } });
+    // the flight ends 120vh before the section does: that last stretch is the hand-off to the supersonic scene (site.js)
+    scrollTrigger: { trigger: section, start: 'top top', end: () => '+=' + (section.offsetHeight - innerHeight * 2.2), scrub: RM ? true : .6, invalidateOnRefresh: true } });
   tl.to(S, { ...LINEUP, duration: .16 }, 0)
     .to(S, { deg: 5, duration: .1 }, .04)
     .to(S, { sight: 1, duration: .03, ease: 'none' }, .11)

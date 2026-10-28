@@ -230,6 +230,7 @@
     if (!RM && G()) G().fromTo(shade, { v: 0 }, { v: .06, duration: .7, ease: 'sine.inOut', yoyo: true, repeat: 3, delay: 1.4, onUpdate: () => setShade(shade.v, true) });  // a nudge shows it moves
   });
 
+  const iDroop = scenes.indexOf($('droop')), iBoom = scenes.indexOf($('boom'));
   let last = -1, lastP = null, dirty = true;
   function update() {
     const y = scrollY;
@@ -296,6 +297,22 @@
     }
     // ---- 3 droop: droop3d.js scrubs the nose with GSAP and reports the angle; this is only the fallback without it
     if (!window.noseDriven) { const p = P.droop; noseReadout(p < .42 ? lerp(0, 5, ease(seg(p, .1, .36))) : lerp(5, 12.5, ease(seg(p, .62, .88)))); }
+    // ---- 3 to 4: the hand-off. The camera rushes on towards the sun, the picture streaks and brightens, and the
+    // supersonic sky opens from the sun. The supersonic scene starts on the same still, then dissolves into the live clouds.
+    { const tail = 1 - 1.2 * vh / Math.max(1, scenes[iDroop].offsetHeight - vh);   // where the flight ends and the hand-off begins
+      const t = RM ? 0 : seg(P.droop, tail + .005, .985), k = ease(t);
+      const a = $('handoff-a'); a.style.opacity = t > 0 ? 1 : 0; a.style.setProperty('--r', lerp(-30, 150, k).toFixed(2) + 'vmax');
+      const c = $('droop3d'); c.style.transform = k ? `scale(${1 + .3 * k})` : ''; c.style.filter = k ? `blur(${(k * 7).toFixed(2)}px) brightness(${(1 + .55 * k).toFixed(3)})` : '';
+      const ui = 1 - seg(P.droop, tail - .03, tail);
+      ['factbox', 'nosepanel'].forEach(id => { $(id).style.opacity = ui; });
+      $('handoff-b').style.opacity = RM ? 0 : (1 - seg(P.boom, .015, .09)).toFixed(3);
+      // while the page scrolls from one scene to the next, both copies are held still on screen, so the cut is invisible
+      const rd = rects[iDroop], rb = rects[iBoom];
+      a.style.transform = `translateY(${-Math.min(0, rd.bottom - vh)}px)`;
+      $('handoff-b').style.transform = `translateY(${-Math.max(0, rb.top)}px)`;
+      const settled = rb.top <= 1 ? seg(P.boom, 0, .05) : 0;     // the supersonic words wait until their scene has arrived
+      $('boom-meter').style.opacity = $('para').style.opacity = RM ? '' : settled.toFixed(3);
+    }
     // ---- 4 supersonic
     { const p = P.boom;
       set($('boom-photo'), RM ? 'none' : `scale(${1.18 - p*.16}) translateY(${p*-3}%)`);

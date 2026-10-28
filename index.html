@@ -261,6 +261,8 @@
         <span class="hair"></span>
         <div class="ticks label" id="ticks"><span><b>0°</b>Nose up</span><span><b>5°</b>Take-off</span><span><b>12.5°</b>Landing</span></div>
       </div>
+      <!-- the hand-off: the supersonic sky opens from the sun while the camera rushes on, so the next scene arrives already in place -->
+      <div class="handoff" id="handoff-a" aria-hidden="true"><img src="assets/handoff.webp" alt=""></div>
     </div>
   </section>
 
@@ -269,7 +271,8 @@
     <div class="stage">
       <img class="photo will" id="boom-photo" src="assets/clouds.webp" alt="A sea of clouds seen from high altitude" width="1264" height="848">
       <div class="tint"></div>
-      <div class="meter">
+      <div class="handoff" id="handoff-b" aria-hidden="true" style="opacity:1"><img src="assets/handoff.webp" alt=""></div>
+      <div class="meter" id="boom-meter">
         <span class="label rise">Mach</span>
         <span class="mach d2 rise" id="mach-big" style="--d:100">0.95</span>
       </div>
