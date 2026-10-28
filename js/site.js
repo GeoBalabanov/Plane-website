@@ -299,9 +299,9 @@
     // ---- 5 mach 2 plane
     { const p = P.mach2;
       const wide = innerWidth > 720 ? 1 : 0;                      // on a phone the two words are stacked, so they stay put
-      const grow = ease(seg(p, .5, .95)) * wide, spread = ease(seg(p, .15, .6)) * wide;
-      set($('flyat'), `translateX(${-spread*3 - grow*4}vw)`);
-      set($('machtwo'), `translateX(${spread*3 + grow*4}vw)`);
+      const spread = ease(seg(p, .15, .6)) * wide;              // the words open a little as the aircraft comes between them
+      set($('flyat'), `translateX(${-spread*3}vw)`);
+      set($('machtwo'), `translateX(${spread*3}vw)`);
       const info = seg(p, .12, .3) * (1 - seg(p, .62, .78));
       $('sidecopy').style.opacity = $('spec').style.opacity = info;
     }
