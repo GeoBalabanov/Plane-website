@@ -235,7 +235,20 @@ body.at-end .hud,body.at-end .stagebar{opacity:0}
 #cruise{height:320vh}
 #cruise .stage{background:#04060b}
 #cruise .photo{position:absolute;left:-4%;width:108%;height:100%;object-fit:cover;object-position:50% 60%}
-#cruise video.photo{top:30vh;left:0;width:100%;height:72vh;object-position:50% 0;-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 9%);mask-image:linear-gradient(180deg,transparent 0,#000 9%);transform-origin:50% 0}   /* real ISS footage, its limb set low so the type sits in black space */
+#cruise video.photo{top:30vh;left:0;width:100%;height:72vh;object-position:50% 0;-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 9%);mask-image:linear-gradient(180deg,transparent 0,#000 9%);transform-origin:50% 39%}   /* real ISS footage, its limb set low so the type sits in black space */
+#cruise .lowsky{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,#0c1f45 0%,#1f4783 30%,#4f83c2 50%,#8db6e0 58%,rgba(141,182,224,0) 64%)}   /* the blue sky lower down, before it darkens; it ends at the horizon */
+#cruise .altimeter{position:absolute;right:calc(var(--gutter) + 92px);top:17vh;bottom:22vh;width:min(250px,30vw);z-index:2;color:var(--paper)}
+#cruise .alt-track{position:absolute;right:0;top:0;bottom:0;width:1px;background:rgba(246,241,231,.25)}
+#cruise .alt-fill{position:absolute;left:-1px;bottom:0;width:3px;height:100%;background:linear-gradient(0deg,rgba(255,90,31,.2),var(--flame));transform-origin:50% 100%;transform:scaleY(0)}
+#cruise .alt-tick{position:absolute;right:12px;bottom:calc(var(--h) * 100%);transform:translateY(50%);font:500 10px/1 var(--mono);letter-spacing:.08em;color:rgba(246,241,231,.45);white-space:nowrap}
+#cruise .alt-tick::after{content:"";position:absolute;right:-12px;top:50%;width:7px;height:1px;background:rgba(246,241,231,.4)}
+#cruise .alt-ref{position:absolute;right:76px;bottom:calc(var(--h) * 100%);transform:translateY(50%);display:grid;justify-items:end;gap:3px;
+  font:500 11px/1.1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:rgba(246,241,231,.82);white-space:nowrap}
+#cruise .alt-ref em{font-style:normal;letter-spacing:.04em;text-transform:none;color:rgba(246,241,231,.5)}
+#cruise .alt-ref::after{content:"";position:absolute;right:-64px;top:50%;width:52px;height:1px;background:linear-gradient(90deg,transparent,rgba(246,241,231,.55))}
+#cruise .alt-top{color:var(--flame)}#cruise .alt-top em{color:rgba(255,140,90,.8)}
+#cruise .alt-now{position:absolute;right:-6px;transform:translate(100%,50%);margin-right:-10px;padding:5px 9px;border-radius:99px;background:var(--flame);color:#140a05;
+  font:600 11px/1 var(--mono);letter-spacing:.06em;white-space:nowrap;font-variant-numeric:tabular-nums}
 #cruise .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(4,6,11,.95) 0%,rgba(4,6,11,.75) 40%,rgba(4,6,11,0) 68%)}
 #cruise .block{position:absolute;left:var(--gutter);top:17vh;display:grid;gap:22px;justify-items:start;max-width:calc(100vw - 2*var(--gutter))}
 #cruise h2{font-variant-numeric:tabular-nums}
@@ -302,6 +315,9 @@ body.at-end .hud,body.at-end .stagebar{opacity:0}
   .nav .route{grid-column:3}
 }
 @media (max-width:720px){
+  #cruise .altimeter{width:auto;left:auto;right:var(--gutter);top:40vh;bottom:30vh}
+  #cruise .alt-ref,#cruise .alt-tick{display:none}
+  #cruise .alt-now{right:12px;margin:0;transform:translateY(50%)}
   .nav{grid-template-columns:auto 1fr}
   .wordmark{grid-column:1;justify-self:start}
   .nav .route{grid-column:2}

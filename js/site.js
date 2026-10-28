@@ -307,7 +307,16 @@
     }
     // ---- 6 cruise
     { const p = P.cruise;
-      set($('earth'), RM ? 'none' : `translateY(${(1 - ease(seg(p, 0, .7))) * 22}vh) scale(${1.12 - p*.1})`);
+      // the climb: from just above the clouds, where the horizon is flat and the sky blue, the camera pulls back
+      // until the Earth curves away under a near-black sky; the altimeter climbs with it
+      const climb = RM ? 1 : ease(seg(p, 0, .46));
+      set($('earth'), RM ? 'none' : `scale(${lerp(2.3, 1.03, climb)})`);
+      $('earth').style.filter = climb < 1 ? `blur(${((1 - climb) * 4).toFixed(2)}px)` : '';
+      $('lowsky').style.opacity = (1 - climb).toFixed(3);
+      $('alt-fill').style.transform = `scaleY(${climb.toFixed(4)})`;
+      $('alt-now').style.bottom = (climb * 100).toFixed(2) + '%';
+      $('alt-now').textContent = (Math.round(climb * 600) * 100).toLocaleString('en-US') + ' ft';
+      set($('altimeter'), '', 1 - seg(p, .44, .54));
       const a = 1 - seg(p, .42, .55), h = seg(p, .55, .68);
       set($('alt-block'), `translateY(${-(1-a)*30}px)`, a);
       set($('heat-block'), `translateY(${(1-h)*30}px)`, h);
