@@ -162,6 +162,9 @@ body.at-end .hud,body.at-end .stagebar{opacity:0}
 .win-view img{width:100%;height:100%;object-fit:cover;filter:saturate(.95) contrast(1.04);transform:scale(1.2);
   animation:taxi var(--dur, 14s) ease-in-out infinite alternate}
 @keyframes taxi{from{transform:scale(1.2) translateX(var(--px, 4%))}to{transform:scale(1.2) translateX(calc(var(--px, 4%) * -1))}}
+/* the shade rolled up at the top of the glass, exactly as in your own window */
+.win-shade{position:absolute;inset:0;background:url(../assets/shade-panel.webp) 0 0/100% 100% no-repeat;transform:translateY(-87.74%);z-index:2}
+.win-shade::after{content:"";position:absolute;left:0;right:0;top:100%;height:6%;background:linear-gradient(180deg,rgba(0,0,0,.45),rgba(0,0,0,0))}
 .win-glare{position:absolute;inset:-30%;pointer-events:none;background:linear-gradient(115deg,transparent 42%,rgba(255,255,255,.26) 49%,rgba(255,255,255,.08) 52%,transparent 58%);
   transform:translateX(-70%);animation:glare 9.6s ease-in-out var(--gd, 0s) infinite}
 @keyframes glare{0%{transform:translateX(-70%)}28%,100%{transform:translateX(70%)}}
