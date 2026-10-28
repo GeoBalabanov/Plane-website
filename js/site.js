@@ -258,18 +258,25 @@
       sh.style.transform = `translateY(${-open * 87.74}%)`;
       sh.style.opacity = 1 - seg(shade.v, .985, 1);
       $('shade-edge').style.opacity = 1 - open;
-      const z = ease(seg(p, .3, .95));
-      const s = RM ? 1 : 1 + Math.pow(z, 2) * 4.6;
-      set($('window'), `translate(-50%,-59%) scale(${s})`);
+      // pulling back: the window shrinks into a row of windows on the cabin wall, each over another Concorde airport
+      const back = ease(seg(p, .28, .7)), sEnd = innerWidth <= 720 ? .2 : .3;
+      const s = RM ? 1 : lerp(1, sEnd, back);
+      const tf = `translate(-50%,-59%) scale(${s})`;
+      set($('window'), tf); set($('winrow'), tf);
+      $('winrow').style.setProperty('--s', s.toFixed(4));
+      $('winrow').style.opacity = RM ? 0 : seg(p, .3, .5).toFixed(3);
+      $('winrow').style.setProperty('--tag', seg(p, .55, .66).toFixed(3));
+      $('wall').style.opacity = RM ? 0 : (seg(p, .3, .55) * .97).toFixed(3);
+      $('winrow-note').style.opacity = RM ? 0 : (seg(p, .56, .66) * (1 - seg(p, .74, .8))).toFixed(3);
       const apart = ease(seg(p, .24, .66));
       set($('london'), `translateX(${-apart*55}vw)`, 1 - seg(p, .42, .66));
       set($('newyork'), `translateX(${apart*55}vw)`, 1 - seg(p, .42, .66));
       $('london').style.filter = $('newyork').style.filter = apart > 0 ? `blur(${apart*6}px)` : '';
       $('intro').style.opacity = $('scrollhint').style.opacity = 1 - seg(p, .2, .3);
-      const f = seg(p, .3, .4) * (1 - seg(p, .6, .7));
-      set($('factchip'), `translateY(${(1 - seg(p, .3, .4))*30}px)`, f);
+      const f = seg(p, .3, .38) * (1 - seg(p, .5, .56));
+      set($('factchip'), `translateY(${(1 - seg(p, .3, .38))*30}px)`, f);
       $('factchip').style.visibility = f > 0 ? 'visible' : 'hidden';
-      $('veil').style.opacity = seg(p, .68, .96);
+      $('veil').style.opacity = seg(p, .8, .98);
       viewOn = p < 1 && rects[0].bottom > 0;
       // the wordmark starts on the window shade and rides up into the nav as the shade lifts
       const k = (RM || innerWidth <= 720) ? 0 : 1 - open;
