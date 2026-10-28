@@ -57,7 +57,7 @@ h1,h2,h3,p{margin:0}
 .rm [data-reveal] .ch,.rm .rise{transform:none!important;opacity:1!important;transition:none!important}
 
 /* ---------- preloader ---------- */
-.preloader{position:fixed;inset:0;z-index:100;display:grid;place-items:center;text-align:center;background:linear-gradient(180deg,var(--umber) 0%,#171211 45%,var(--ink) 100%);
+.preloader{position:fixed;inset:0;z-index:100;display:grid;place-items:center;text-align:center;background:radial-gradient(70% 60% at 50% 45%,#1d2a44 0%,#0d1424 55%,#05070d 100%);
   transition:opacity .9s var(--out),visibility 0s .9s;animation:pl-out .01s 6s forwards}
 .preloader .in{display:grid;gap:12px;justify-items:center;animation:pl-in 1s var(--out) both}
 .preloader .mark{font-size:clamp(22px,2vw,30px);font-weight:200;font-stretch:125%;letter-spacing:.02em}
@@ -316,6 +316,29 @@ body.at-end .hud,body.at-end .stagebar{opacity:0}
   .cta:hover .dot svg{animation:none}
   .para .w{transition:none}
 }
+
+/* ---------- 00. intro: fifty years since Concorde entered service ---------- */
+.intro{position:fixed;inset:0;z-index:95;display:grid;place-items:center;padding:calc(env(safe-area-inset-top,0px) + 24px) var(--gutter) calc(env(safe-area-inset-bottom,0px) + 24px);
+  background:radial-gradient(70% 60% at 50% 45%,#1d2a44 0%,#0d1424 55%,#05070d 100%);color:#efe6d2;overflow:auto}
+.intro::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;mix-blend-mode:overlay;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E")}
+.intro[hidden]{display:none}
+.in-col{position:relative;z-index:1;display:grid;justify-items:center;text-align:center;gap:26px;max-width:980px}
+.in-label{margin:0;font:400 11px/1.4 'Courier Prime','Courier New',monospace;letter-spacing:.22em;text-transform:uppercase;color:#c8a55c}
+.in-year{display:flex;align-items:center;gap:clamp(16px,3vw,40px);font:400 clamp(44px,8vw,120px)/1 'Libre Caslon Text',Georgia,serif;color:#c8a55c;font-variant-numeric:tabular-nums}
+.in-year span:first-child{color:rgba(239,230,210,.38)}
+.in-rule{display:block;width:clamp(60px,14vw,220px);height:1px;background:linear-gradient(90deg,rgba(200,165,92,.2),#c8a55c);transform-origin:0 50%}
+.in-title{margin:0;font:400 clamp(30px,4.6vw,66px)/1.08 'Libre Caslon Text',Georgia,serif;letter-spacing:-.015em;color:#f4ecd9;text-wrap:balance}
+.in-title .w{display:inline-block;overflow:hidden;vertical-align:top;padding-bottom:.08em}
+.in-title .w i{display:inline-block;font-style:normal}
+.in-title .w:nth-child(-n+2) i{font-style:italic;color:#c8a55c}
+.in-body{margin:0;max-width:46ch;font:400 13px/1.7 'Courier Prime','Courier New',monospace;letter-spacing:.02em;color:rgba(239,230,210,.7)}
+.in-go{height:52px;padding:0 26px;margin-top:6px;border:0;border-radius:52px;cursor:pointer;display:inline-flex;align-items:center;gap:12px;background:#f2e9d5;color:#14294d;
+  font:700 15px/1 'Libre Caslon Text',Georgia,serif;box-shadow:0 10px 30px -10px rgba(0,0,0,.6);transition:background .2s,transform .2s}
+.in-go:hover{background:#fff8e8}.in-go:active{transform:scale(.97)}
+.in-go svg{color:#c8a55c;transition:transform .3s var(--out)}.in-go:hover svg{transform:translateX(3px)}
+.in-go:focus-visible{outline:2px solid #c8a55c;outline-offset:4px}
+@media (max-width:720px){.in-col{gap:20px}.in-year{gap:14px}}
 
 /* ---------- 0. check-in: the boarding pass the visitor fills in ---------- */
 .checkin{position:fixed;inset:0;z-index:90;display:grid;place-items:center;align-content:center;gap:22px;padding:calc(env(safe-area-inset-top,0px) + 24px) var(--gutter) calc(env(safe-area-inset-bottom,0px) + 24px);

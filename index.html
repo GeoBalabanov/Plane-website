@@ -64,6 +64,19 @@
   <div class="in"><span class="mark">Concorde</span><span class="label muted">London Heathrow to New York JFK</span></div>
 </div>
 
+<!-- 00. Intro: fifty years since Concorde entered service, before the visitor checks in -->
+<div class="intro" id="intro" role="dialog" aria-modal="true" aria-labelledby="in-title">
+  <div class="in-col">
+    <p class="in-label" id="in-label">Concorde entered service on 21 January 1976</p>
+    <div class="in-year" aria-hidden="true"><span id="in-from">1976</span><i class="in-rule"></i><span id="in-to">2026</span></div>
+    <h2 class="in-title" id="in-title">Fifty years later, take the flight once more.</h2>
+    <p class="in-body">London to New York in about three and a half hours, at twice the speed of sound. The last British Airways commercial flight landed in 2003.</p>
+    <button class="in-go" type="button" id="in-go">Check in
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+</div>
+
 <!-- 0. Check-in: the visitor fills in their own boarding pass -->
 <div class="checkin" id="checkin" role="dialog" aria-modal="true" aria-labelledby="ck-title" aria-describedby="ck-help">
   <div class="ck-glow" aria-hidden="true"></div>
@@ -371,6 +384,7 @@
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js"></script>
 <script src="js/site.js"></script>
+<script src="js/intro.js"></script>
 <script src="js/checkin.js"></script>
 <script src="js/cloudnoise.js"></script>
 <script src="js/cinemagraph.js"></script>

@@ -39,18 +39,20 @@
   const lenis = () => window.lenis;
   if (lenis()) lenis().stop();
 
-  // entrance after the preloader, then a slow float like paper in a draught
+  // entrance after the preloader (or the intro), then a slow float like paper in a draught
   let float = null;
   if (G && !RM) {
     G.set(pass, { y: 80, rotation: -5, opacity: 0 });
     G.set(['.ck-kicker', '.ck-actions', '.ck-note'], { opacity: 0, y: 14 });
-    G.timeline({ delay: 1.7 })
+    const enter = delay => G.timeline({ delay })
       .to(pass, { y: 0, rotation: -1.2, opacity: 1, duration: 1.3, ease: 'expo.out' })
       .to(['.ck-kicker', '.ck-actions', '.ck-note'], { opacity: 1, y: 0, duration: .9, ease: 'expo.out', stagger: .08 }, '-=.9')
       .add(() => {
         float = G.to(pass, { y: -7, rotation: -.4, duration: 3.2, ease: 'sine.inOut', yoyo: true, repeat: -1 });
         if (matchMedia('(pointer:fine)').matches) nameIn.focus({ preventScroll: true });
       });
+    // the intro screen comes first: bring the pass in once it has been lifted away
+    if (window.introOpen) addEventListener('concorde:intro-done', () => enter(.1), { once: true }); else enter(1.7);
     // the pass tilts a little towards the pointer
     if (matchMedia('(pointer:fine)').matches) ck.addEventListener('pointermove', e => {
       const rx = (e.clientY / innerHeight - .5) * -5, ry = (e.clientX / innerWidth - .5) * 7;
