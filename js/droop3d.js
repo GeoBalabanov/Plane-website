@@ -40,7 +40,7 @@ const SKY = `
     vec3 c0 = skyAt(u, v);
     float m = smoothstep(-.05, .1, c0.r - c0.b * .95);           // cloud, not blue sky
     vec2 q = vec2(u * 140., v * 70.);
-    vec2 boil = (vec2(noise(q + skyT * .09), noise(q * 1.3 - skyT * .07)) - .5) * .0016 * m * smoothstep(.0, .25, el);
+    vec2 boil = (vec2(noise(q + skyT * .05), noise(q * 1.3 - skyT * .04)) - .5) * .0006 * m * smoothstep(.0, .25, el);
     vec3 c = skyAt(u + boil.x, v + boil.y);
     // richer golden hour: deeper blue overhead, more body in the clouds, warm light on their edges
     float l = dot(c, vec3(.299, .587, .114));
@@ -132,7 +132,7 @@ function start() {
         // grass: the photo at two scales so it never repeats, mown in stripes along the runway, then fields
         vec3 grass = lin(texture2D(tGrass, g / 16.).rgb) * lin(texture2D(tGrass, g / 131. + .37).rgb) * 3.2 * vec3(.78, 1., .62);
         grass *= 1. + .08 * sign(sin(x * .13)) * fade * step(ax, 320.);
-        float gust = noise((g - vec2(1.1, 1.6) / 1.94 * time * 7.) * .03) * .65 + noise((g - vec2(1.1, 1.6) / 1.94 * time * 11.) * .09) * .35;
+        float gust = noise((g - vec2(1.1, 1.6) / 1.94 * time * 3.2) * .03) * .65 + noise((g - vec2(1.1, 1.6) / 1.94 * time * 4.6) * .09) * .35;
         gust = smoothstep(.25, .85, gust); grass *= .8 + .45 * gust;   // gusts rolling over the grass as light and dark waves
         vec2 cell = floor((g + vec2(9000., 3000.)) / vec2(420., 300.)), fc = fract((g + vec2(9000., 3000.)) / vec2(420., 300.));
         float h = hash(cell), edge = min(min(fc.x, 1. - fc.x) * 420., min(fc.y, 1. - fc.y) * 300.);
@@ -225,11 +225,11 @@ function start() {
           float y = position.y;
           vec3 p = vec3(position.x + lean.x * h + wv.x * wd, position.y * h, position.z + lean.y * h + wv.y * wd);
           p.xz = mat2(cos(a), -sin(a), sin(a), cos(a)) * p.xz;
-          // wind: gusts that roll across the field and lay the grass over, a sway, and a quick flutter at the tips
+          // wind: slow gusts that roll across the field and lay the grass over, and a gentle sway
           vec2 wdir = normalize(vec2(1.1, 1.6));
-          float gust = n2((w - wdir * time * 7.) * .03) * .65 + n2((w - wdir * time * 11.) * .09) * .35;
+          float gust = n2((w - wdir * time * 3.2) * .03) * .65 + n2((w - wdir * time * 4.6) * .09) * .35;
           gust = smoothstep(.25, .85, gust);
-          float sway = .1 + gust * 1.05 + sin(time * 2.1 + dot(w, vec2(.6, .35)) + shape.w * 6.) * .1 + sin(time * 5.3 + shape.w * 17.) * .03;
+          float sway = .1 + gust * .8 + sin(time * 1.3 + dot(w, vec2(.6, .35)) + shape.w * 6.) * .07;
           float bend = y * y * sway * h * (1.3 - shape.w * .5);
           p.xz += wdir * bend; p.y -= bend * bend * .45 / max(h, .01);
           vec3 world = vec3(w.x + p.x, p.y, w.y - dist + p.z);
@@ -541,14 +541,47 @@ function start() {
   const sight = new THREE.Line(new THREE.BufferGeometry().setFromPoints([EYE, EYE.clone().setZ(90)]),
     new THREE.LineDashedMaterial({ color: 0xff5a1f, dashSize: .7, gapSize: .45, transparent: true, opacity: 0 }));
   sight.computeLineDistances(); aircraft.add(sight);
+  /* the aircraft is weathered, not showroom clean: a dusty mottle over the paint, grime streaking aft along the belly
+     where the airflow drags it, and soot behind the engines. Worked out in the aircraft's own frame (metres, nose +z). */
+  const toPlane = { value: new THREE.Matrix4() }; let planeRoot = null;
+  const done = new Set();
+  function weather(m) {
+    if (done.has(m)) return; done.add(m);
+    m.onBeforeCompile = sh => {
+      sh.uniforms.toPlane = toPlane;
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nuniform mat4 toPlane; varying vec3 vPl;')
+        .replace('#include <project_vertex>', '#include <project_vertex>\nvPl = (toPlane * modelMatrix * vec4(transformed, 1.)).xyz;');
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
+        varying vec3 vPl;
+        float gh(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+        float gn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f);
+          return mix(mix(gh(i), gh(i + vec2(1, 0)), f.x), mix(gh(i + vec2(0, 1)), gh(i + vec2(1)), f.x), f.y); }
+        float gf(vec2 p){ return gn(p) * .55 + gn(p * 2.3 + 7.1) * .3 + gn(p * 5.1 + 3.3) * .15; }`)
+        .replace('#include <map_fragment>', `#include <map_fragment>
+        float mottle = gf(vec2(vPl.z * .22, vPl.y * .9 + vPl.x * .4));
+        // thin streaks that run aft with the airflow: they change quickly with height and slowly along the length
+        float streak = gn(vec2(vPl.y * 13. + vPl.x * 2., vPl.z * .11)) * .65 + gn(vec2(vPl.y * 31. + vPl.x * 5., vPl.z * .23)) * .35;
+        streak = smoothstep(.4, .9, streak);
+        float lower = smoothstep(3.2, 1.2, vPl.y);                         // the belly and the lower sides catch the dirt
+        float aft = smoothstep(14., -18., vPl.z);                          // more of it towards the tail
+        float soot = smoothstep(-6., -21., vPl.z) * smoothstep(2.2, .4, vPl.y);   // behind the engines
+        float grime = clamp(.3 * smoothstep(.3, .85, mottle) + streak * (.45 + .55 * lower) * (.5 + .5 * aft) + .8 * soot * (.5 + .5 * streak), 0., 1.);
+        diffuseColor.rgb *= vec3(.6, .59, .565);                           // paint that has flown, not studio white; also keeps the sunlit skin out of clipping
+        diffuseColor.rgb *= mix(vec3(1.), vec3(.42, .4, .36), grime);
+        diffuseColor.rgb *= .93 + .1 * gn(vPl.xz * 7. + vPl.y * 3.);`)
+        .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
+        roughnessFactor = clamp(roughnessFactor + grime * .4 + .1 * mottle, 0., 1.);`);
+    };
+    m.needsUpdate = true;
+  }
   new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).load('assets/models/concorde.glb', gltf => {
     gltf.scene.traverse(o => {
       if (!o.isMesh) return;
       o.layers.enable(1); o.castShadow = o.receiveShadow = true;   // layer 1 is what the contact shadow sees
-      const m = o.material; if (m.name !== 'Seal') { m.roughness = .32; m.envMapIntensity = .38; }
+      const m = o.material; if (m.name !== 'Seal') { m.roughness = .42; m.envMapIntensity = .34; weather(m); }
       if (m.map) m.map.anisotropy = renderer.capabilities.getMaxAnisotropy();
     });
-    aircraft.add(gltf.scene); gltf.scene.updateMatrixWorld(true);
+    aircraft.add(gltf.scene); gltf.scene.updateMatrixWorld(true); planeRoot = gltf.scene;
     nosePivot = gltf.scene.getObjectByName('NosePivot');
     // side profile of the solid nose (ahead of the visor glass), for the pilot's sight line
     const toPivot = nosePivot.matrixWorld.clone().invert(), m = new THREE.Matrix4();
@@ -702,8 +735,8 @@ function start() {
       target.set(S.tx, S.ty + S.alt, S.tz + MAIN_Z);
       cam.position.set(S.cx, S.cy, S.cz + MAIN_Z).sub(new THREE.Vector3(S.tx, S.ty, S.tz + MAIN_Z)).multiplyScalar(pull).add(target);
       cam.position.y += S.alt * (S.fy - 1); cam.position.y = Math.max(cam.position.y, .8);
-      if (!RM) { const t = ms / 1000, k = S.reheat * (S.alt < 1 ? .06 : .012) * (.3 + S.mach * 2.4);
-        shake.set(Math.sin(t * 37) * Math.sin(t * 13), Math.sin(t * 41 + 1) * Math.sin(t * 17), 0).multiplyScalar(k); cam.position.add(shake); }
+      if (!RM && S.alt < 1) { const t = ms / 1000, k = S.reheat * .014 * (.3 + S.mach * 2.4) * (1 - S.alt);
+        shake.set(Math.sin(t * 7.1) * Math.sin(t * 2.3), Math.sin(t * 8.3 + 1) * Math.sin(t * 2.9), 0).multiplyScalar(k); cam.position.add(shake); }
       cam.lookAt(target);
       { const f = new THREE.Vector3(); cam.getWorldDirection(f); f.y = 0; f.normalize();
         fields.forEach(F => F.u.focus.value.set(cam.position.x + f.x * F.T * .32, cam.position.z + f.z * F.T * .32 + S.dist));
@@ -751,6 +784,7 @@ function start() {
       dirty = false;
     }
     lastGrain = tick; grade.uniforms.time.value = tick % 1000 / 1000;
+    if (planeRoot) { planeRoot.updateWorldMatrix(true, false); toPlane.value.copy(planeRoot.matrixWorld).invert(); }   // grime stays put on the skin
     composer.render();
   }
   resize(); addEventListener('resize', resize);

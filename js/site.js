@@ -195,17 +195,17 @@
     else setShade(0);
   }
   // drag on the shade itself
-  let dragY = null, dragV = 0;
+  let dragY = null, dragV = 0, moved = 0;
   const clipH = () => grab.getBoundingClientRect().height * .88;
   grab.addEventListener('pointerdown', e => {
-    if (shade.done) return; dragY = e.clientY; dragV = shade.v; grab.setPointerCapture(e.pointerId); grab.classList.add('held');
+    if (shade.done) return; dragY = e.clientY; dragV = shade.v; moved = 0; grab.setPointerCapture(e.pointerId); grab.classList.add('held');
     if (G()) G().killTweensOf(shade);
   });
-  grab.addEventListener('pointermove', e => { if (dragY !== null) setShade(dragV + (dragY - e.clientY) / clipH()); });
+  grab.addEventListener('pointermove', e => { if (dragY !== null) { moved = Math.max(moved, Math.abs(dragY - e.clientY)); setShade(dragV + (dragY - e.clientY) / clipH()); } });
   const release = () => { if (dragY === null) return; dragY = null; grab.classList.remove('held'); settle(); };
   grab.addEventListener('pointerup', release); grab.addEventListener('pointercancel', release);
   // a click or the keyboard opens it too
-  grab.addEventListener('click', () => { if (shade.v < .02) finishShade(); });
+  grab.addEventListener('click', () => { if (moved < 6) finishShade(); });
   grab.addEventListener('keydown', e => {
     if (e.key === 'ArrowUp') { e.preventDefault(); setShade(shade.v + .15); if (shade.v > .45) finishShade(); }
   });
