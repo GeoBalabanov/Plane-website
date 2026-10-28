@@ -10,7 +10,7 @@
 <script>document.documentElement.className = 'js' + (matchMedia('(prefers-reduced-motion: reduce)').matches ? ' rm' : '');</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,200..800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,200..800&family=IBM+Plex+Mono:wght@400;500&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Courier+Prime:wght@400;700&display=swap">
 <link rel="stylesheet" href="css/site.css">
 <noscript><style>.preloader{display:none}</style></noscript>
 <style id="certificate-styles">
@@ -70,32 +70,47 @@
   <p class="ck-kicker label" id="ck-help">Check-in · Fill in your boarding pass</p>
   <form class="pass" id="pass" autocomplete="off" novalidate>
     <div class="pass-main">
-      <div class="pass-head label"><span>Boarding pass</span><span class="muted">Concorde · BA001</span></div>
-      <h2 class="pass-title" id="ck-title"><span>London</span><i aria-hidden="true">→</i><span>New York</span></h2>
-      <div class="pass-route label muted"><span>LHR · Heathrow</span><span>JFK · New York</span></div>
-      <div class="pass-grid">
-        <label class="field f-name"><span class="label muted">Passenger</span><input id="ck-name" name="name" maxlength="22" placeholder="Write your name" spellcheck="false"></label>
-        <div class="field"><span class="label muted">Flight</span><b>BA001</b></div>
-        <div class="field"><span class="label muted">Date</span><b id="ck-date">Today</b></div>
-        <div class="field"><span class="label muted">Seat</span><b id="ck-seat">1A</b></div>
+      <div class="pass-band">
+        <span class="pass-mark">Concorde</span>
+        <span class="pass-doc"><b>Passenger ticket</b><span>and boarding pass</span></span>
+        <span class="pass-coupon"><span>Flight coupon</span><b>1</b></span>
       </div>
-      <fieldset class="seatmap">
-        <legend class="label muted">Choose your seat <span class="hint">Two seats, the aisle, two seats</span></legend>
-        <div class="seats-scroll"><div class="seats" id="seats"></div></div>
-        <div class="seat-key label muted" aria-hidden="true"><span>Nose</span><span>Tail</span></div>
-      </fieldset>
+      <div class="pass-body">
+        <h2 class="pass-title" id="ck-title"><span>London</span><i aria-hidden="true">to</i><span>New York</span></h2>
+        <div class="pass-route"><span><em>From</em> London Heathrow &middot; LHR</span><span><em>To</em> New York J.F. Kennedy &middot; JFK</span></div>
+        <div class="pass-grid">
+          <label class="field f-name"><span class="flabel">Name of passenger</span><input id="ck-name" name="name" maxlength="22" placeholder="Type your name" spellcheck="false"></label>
+          <div class="field"><span class="flabel">Flight</span><b>BA001</b></div>
+          <div class="field"><span class="flabel">Class</span><b>R</b></div>
+          <div class="field"><span class="flabel">Date</span><b id="ck-date">Today</b></div>
+          <div class="field"><span class="flabel">Seat</span><b id="ck-seat">1A</b></div>
+        </div>
+        <fieldset class="seatmap">
+          <legend class="flabel">Seat allocation <span class="hint">Two seats, the aisle, two seats</span></legend>
+          <div class="seats-scroll"><div class="seats" id="seats"></div></div>
+          <div class="seat-key flabel" aria-hidden="true"><span>Nose</span><span>Tail</span></div>
+        </fieldset>
+        <div class="pass-fine" aria-hidden="true"><span>Not transferable</span><span>Supersonic service &middot; Mach 2</span><span>No. 125 4400 160 001</span></div>
+      </div>
     </div>
     <div class="pass-stub" id="stub" aria-hidden="true">
-      <span class="label muted">Seat</span><b class="stub-seat" id="stub-seat">1A</b>
-      <span class="label muted">Passenger</span><b class="stub-name" id="stub-name">Passenger</b>
-      <i class="barcode-v"></i>
+      <span class="stub-mark">Concorde</span>
+      <span class="flabel">Seat</span><b class="stub-seat" id="stub-seat">1A</b>
+      <span class="flabel">Passenger</span><b class="stub-name" id="stub-name">Passenger</b>
+      <span class="flabel st-flight">Flight</span><b class="stub-typed">BA001 &middot; LHR / JFK</b>
+      <i class="punch"></i>
     </div>
     <svg class="stamp" id="stamp" viewBox="0 0 160 160" aria-hidden="true">
-      <circle cx="80" cy="80" r="74" fill="none" stroke="currentColor" stroke-width="4"/>
-      <circle cx="80" cy="80" r="64" fill="none" stroke="currentColor" stroke-width="1.5"/>
-      <text x="80" y="88" text-anchor="middle" font-family="Archivo, sans-serif" font-weight="700" font-size="25" letter-spacing="2" fill="currentColor">BOARDED</text>
-      <text x="80" y="112" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" letter-spacing="2" fill="currentColor">LHR · BA001</text>
-      <text x="80" y="58" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" letter-spacing="2" fill="currentColor" id="stamp-date">TODAY</text>
+      <defs><filter id="ink" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="4" result="n"/>
+        <feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" result="d"/><feComponentTransfer in="n" result="m"><feFuncA type="linear" slope="1.6" intercept="-.35"/></feComponentTransfer>
+        <feComposite in="d" in2="m" operator="out"/></filter></defs>
+      <g filter="url(#ink)">
+        <circle cx="80" cy="80" r="72" fill="none" stroke="currentColor" stroke-width="4"/>
+        <circle cx="80" cy="80" r="62" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <text x="80" y="89" text-anchor="middle" font-family="'Libre Caslon Text', Georgia, serif" font-weight="700" font-size="25" letter-spacing="1.5" fill="currentColor">BOARDED</text>
+        <text x="80" y="112" text-anchor="middle" font-family="'Courier Prime', 'Courier New', monospace" font-weight="700" font-size="11" letter-spacing="1.5" fill="currentColor">LHR &#183; BA001</text>
+        <text x="80" y="58" text-anchor="middle" font-family="'Courier Prime', 'Courier New', monospace" font-weight="700" font-size="11" letter-spacing="1.5" fill="currentColor" id="stamp-date">TODAY</text>
+      </g>
     </svg>
   </form>
   <div class="ck-actions">
