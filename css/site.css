@@ -139,9 +139,27 @@ body.at-end .hud,body.at-end .stagebar{opacity:0}
   -webkit-mask:url(../assets/shade-mask.png) 0 0/100% 100% no-repeat;mask:url(../assets/shade-mask.png) 0 0/100% 100% no-repeat}
 .shade-panel{position:absolute;inset:0;background:url(../assets/shade-panel.webp) 0 0/100% 100% no-repeat;will-change:transform}
 .shade-edge{position:absolute;inset:0;background:url(../assets/shade-edge.png) 0 0/100% 100% no-repeat}
+/* the visitor lifts the shade: a handle over the shade, and a small tip under the window */
+.shade-lock,.shade-lock body{overflow:hidden}
+#london,#newyork{pointer-events:none}                          /* the headlines cross the window; the shade underneath must still be grabbable */
+.shade-grab{position:absolute;left:19.434%;top:26.37%;width:61.133%;height:60.55%;padding:0;border:0;background:transparent;cursor:grab;touch-action:none;border-radius:42% / 30%}
+.shade-grab.held{cursor:grabbing}
+.shade-grab[hidden]{display:none}
+.shade-grab:focus-visible{outline:2px solid #c8a55c;outline-offset:6px}
+.grab-tip{position:absolute;left:50%;top:calc(100% + 7%);transform:translateX(-50%);display:inline-flex;align-items:center;gap:9px;white-space:nowrap;
+  font:500 11px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:#f2e9d5;padding:9px 14px;border-radius:99px;
+  background:rgba(13,20,36,.55);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:inset 0 0 0 1px rgba(200,165,92,.45);transition:opacity .5s var(--out)}
+.grab-tip svg{color:#c8a55c;animation:lift 1.8s var(--out) infinite}
+.grab-tip.gone{opacity:0}
+.tip-touch{display:none}
+@media (pointer:coarse){.tip-fine{display:none}.tip-touch{display:inline}}
+@keyframes lift{0%,100%{transform:translateY(2px)}50%{transform:translateY(-3px)}}
+@media (prefers-reduced-motion:reduce){.grab-tip svg{animation:none}}
 .shade-shadow{position:absolute;left:0;right:0;top:100%;height:6%;background:linear-gradient(180deg,rgba(0,0,0,.45),rgba(0,0,0,0))}
 #boarding .intro{position:absolute;left:var(--gutter);bottom:14vh;display:grid;gap:22px;justify-items:start}
 #boarding .scrollhint{position:absolute;right:var(--gutter);bottom:14vh;width:min(348px,38vw);border-top:1px solid rgba(246,241,231,.5);padding-top:16px;display:flex;justify-content:space-between;gap:12px}
+#boarding .scrollhint b{font-weight:inherit}
+.shade-lock #scrollhint svg{transform:rotate(180deg);animation:none}
 #boarding .scrollhint svg{vertical-align:-2px;margin-right:8px;animation:nudge 1.8s var(--out) infinite}
 @keyframes nudge{0%,100%{transform:none}50%{transform:translateY(3px)}}
 .factchip{position:absolute;right:var(--gutter);top:22vh;width:min(340px,calc(100vw - 2*var(--gutter)));padding:24px 26px 26px;display:grid;gap:14px;justify-items:start}
@@ -318,11 +336,11 @@ body.at-end .hud,body.at-end .stagebar{opacity:0}
 }
 
 /* ---------- 00. intro: fifty years since Concorde entered service ---------- */
-.intro{position:fixed;inset:0;z-index:95;display:grid;place-items:center;padding:calc(env(safe-area-inset-top,0px) + 24px) var(--gutter) calc(env(safe-area-inset-bottom,0px) + 24px);
+.opening{position:fixed;inset:0;z-index:95;display:grid;place-items:center;padding:calc(env(safe-area-inset-top,0px) + 24px) var(--gutter) calc(env(safe-area-inset-bottom,0px) + 24px);
   background:radial-gradient(70% 60% at 50% 45%,#1d2a44 0%,#0d1424 55%,#05070d 100%);color:#efe6d2;overflow:auto}
-.intro::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;mix-blend-mode:overlay;
+.opening::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;mix-blend-mode:overlay;
   background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E")}
-.intro[hidden]{display:none}
+.opening[hidden]{display:none}
 .in-col{position:relative;z-index:1;display:grid;justify-items:center;text-align:center;gap:26px;max-width:980px}
 .in-label{margin:0;font:400 11px/1.4 'Courier Prime','Courier New',monospace;letter-spacing:.22em;text-transform:uppercase;color:#c8a55c}
 .in-year{display:flex;align-items:center;gap:clamp(16px,3vw,40px);font:400 clamp(44px,8vw,120px)/1 'Libre Caslon Text',Georgia,serif;color:#c8a55c;font-variant-numeric:tabular-nums}

@@ -32,6 +32,7 @@
     lenis = window.lenis = new Lenis({ lerp: 0.085, wheelMultiplier: 0.9, smoothWheel: true });
   }
   const goTo = target => {
+    if (!shade.done) { finishShade(); return setTimeout(() => goTo(target), RM ? 0 : 1250); }   // the shade goes up first
     if (lenis) return lenis.scrollTo(target, { duration: 1.6 });
     const top = typeof target === 'number' ? target : target.getBoundingClientRect().top + scrollY;
     scrollTo({ top, behavior: RM ? 'auto' : 'smooth' });
@@ -170,6 +171,65 @@
   }
   // droop3d.js sends { deg, air }: the angle, and whether the aircraft has left the runway
   addEventListener('concorde:nose', e => typeof e.detail === 'number' ? noseReadout(e.detail) : noseReadout(e.detail.deg, e.detail.air));
+  // ---------- the window shade: the visitor lifts it themselves, by dragging, swiping, the wheel or the keyboard ----------
+  // Until it is up the page holds still at the window; once it is up, scrolling takes over again.
+  const shade = { v: 0, locked: false, done: false };
+  const grab = $('shade-grab'), tip = $('grab-tip');
+  const G = () => window.gsap;
+  function setShade(v, auto = false) { shade.v = clamp(v); last = -1; if (!auto && shade.v > .02) tip.classList.add('gone'); }
+  function lockPage(on) {
+    shade.locked = on; root.classList.toggle('shade-lock', on);
+    if (lenis) on ? lenis.stop() : lenis.start();
+  }
+  function finishShade() {
+    if (shade.done) return; shade.done = true;
+    const end = () => { setShade(1); lockPage(false); grab.hidden = true;
+      $('hint-a').textContent = 'Scroll down'; $('hint-b').textContent = 'To continue the flight'; };
+    if (G() && !RM) G().to(shade, { v: 1, duration: .9 * (1 - shade.v) + .25, ease: 'power3.out', onUpdate: () => setShade(shade.v), onComplete: end });
+    else end();
+  }
+  function settle() {                                          // let go: past halfway it rolls up, otherwise it drops back
+    if (shade.done) return;
+    if (shade.v > .45) return finishShade();
+    if (G() && !RM) G().to(shade, { v: 0, duration: .6, ease: 'back.out(1.6)', onUpdate: () => setShade(shade.v, true) });
+    else setShade(0);
+  }
+  // drag on the shade itself
+  let dragY = null, dragV = 0;
+  const clipH = () => grab.getBoundingClientRect().height * .88;
+  grab.addEventListener('pointerdown', e => {
+    if (shade.done) return; dragY = e.clientY; dragV = shade.v; grab.setPointerCapture(e.pointerId); grab.classList.add('held');
+    if (G()) G().killTweensOf(shade);
+  });
+  grab.addEventListener('pointermove', e => { if (dragY !== null) setShade(dragV + (dragY - e.clientY) / clipH()); });
+  const release = () => { if (dragY === null) return; dragY = null; grab.classList.remove('held'); settle(); };
+  grab.addEventListener('pointerup', release); grab.addEventListener('pointercancel', release);
+  // a click or the keyboard opens it too
+  grab.addEventListener('click', () => { if (shade.v < .02) finishShade(); });
+  grab.addEventListener('keydown', e => {
+    if (e.key === 'ArrowUp') { e.preventDefault(); setShade(shade.v + .15); if (shade.v > .45) finishShade(); }
+  });
+  // while the page is held, the wheel and a swipe anywhere lift the shade as well
+  let wheelT = 0, touchY = null;
+  addEventListener('wheel', e => {
+    if (!shade.locked || shade.done) return;
+    if (G()) G().killTweensOf(shade);
+    setShade(shade.v + Math.max(0, e.deltaY) / 900);
+    clearTimeout(wheelT); wheelT = setTimeout(settle, 220);
+  }, { passive: true });
+  addEventListener('touchstart', e => { if (shade.locked) touchY = e.touches[0].clientY; }, { passive: true });
+  addEventListener('touchmove', e => {
+    if (!shade.locked || shade.done || touchY === null || e.target.closest('#shade-grab')) return;
+    setShade(shade.v + (touchY - e.touches[0].clientY) / 500); touchY = e.touches[0].clientY;
+  }, { passive: true });
+  addEventListener('touchend', () => { if (shade.locked && touchY !== null) { touchY = null; settle(); } });
+  // the page holds at the window once the visitor has boarded, unless they arrive further down
+  addEventListener('concorde:boarded', () => {
+    if (scrollY > innerHeight * .5) { shade.done = true; setShade(1); grab.hidden = true; return; }
+    lockPage(true);
+    if (!RM && G()) G().fromTo(shade, { v: 0 }, { v: .06, duration: .7, ease: 'sine.inOut', yoyo: true, repeat: 3, delay: 1.4, onUpdate: () => setShade(shade.v, true) });  // a nudge shows it moves
+  });
+
   let last = -1, lastP = null, dirty = true;
   function update() {
     const y = scrollY;
@@ -193,10 +253,10 @@
 
     // ---- 1 boarding
     { const p = P.boarding;
-      const open = ease(seg(p, .03, .22));
+      const open = ease(shade.v);
       const sh = $('shade');
       sh.style.transform = `translateY(${-open * 87.74}%)`;
-      sh.style.opacity = 1 - seg(p, .215, .228);
+      sh.style.opacity = 1 - seg(shade.v, .985, 1);
       $('shade-edge').style.opacity = 1 - open;
       const z = ease(seg(p, .3, .95));
       const s = RM ? 1 : 1 + Math.pow(z, 2) * 4.6;
@@ -212,7 +272,7 @@
       $('veil').style.opacity = seg(p, .68, .96);
       viewOn = p < 1 && rects[0].bottom > 0;
       // the wordmark starts on the window shade and rides up into the nav as the shade lifts
-      const k = (RM || innerWidth <= 720) ? 0 : 1 - ease(seg(p, .02, .2));
+      const k = (RM || innerWidth <= 720) ? 0 : 1 - open;
       wordmark.style.transform = k ? `translateY(${k * (vh * .5 - 40)}px) scale(${1 + k * .55})` : '';
     }
     // ---- 2 cabin tour (the camera and hotspots are driven in cabin3d.js)

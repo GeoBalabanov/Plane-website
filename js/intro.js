@@ -2,7 +2,7 @@
    "Check in" lifts the screen away and tells the check-in that it can bring the boarding pass in. */
 (() => {
   const $ = id => document.getElementById(id);
-  const el = $('intro'); if (!el) return;
+  const el = $('opening'); if (!el) return;
   const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const G = window.gsap;
   const FROM = 1976, NOW = new Date().getFullYear(), years = NOW - FROM;

@@ -80,6 +80,7 @@
       if (lenis()) lenis().start();
       document.querySelector('main').setAttribute('tabindex', '-1'); document.querySelector('main').focus({ preventScroll: true });
       dispatchEvent(new Event('resize'));
+      dispatchEvent(new Event('concorde:boarded'));
     };
     if (!G || RM) { finish(); return; }
     if (float) float.kill();

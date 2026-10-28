@@ -65,7 +65,7 @@
 </div>
 
 <!-- 00. Intro: fifty years since Concorde entered service, before the visitor checks in -->
-<div class="intro" id="intro" role="dialog" aria-modal="true" aria-labelledby="in-title">
+<div class="opening" id="opening" role="dialog" aria-modal="true" aria-labelledby="in-title">
   <div class="in-col">
     <p class="in-label" id="in-label">Concorde entered service on 21 January 1976</p>
     <div class="in-year" aria-hidden="true"><span id="in-from">1976</span><i class="in-rule"></i><span id="in-to">2026</span></div>
@@ -171,16 +171,16 @@
     <div class="stage">
       <div class="glow"></div>
       <h1 class="h-split d1 will" id="london" data-reveal>London</h1>
-      <div class="window will" id="window"><img src="assets/window.webp" alt="A small oval cabin window looking out at the airport at dusk, runway lights glowing" width="1024" height="1024"><canvas id="view" aria-hidden="true"></canvas><div class="shade-clip" aria-hidden="true"><div class="shade-panel" id="shade"><i class="shade-shadow"></i></div><div class="shade-edge" id="shade-edge"></div></div></div>
+      <div class="window will" id="window"><img src="assets/window.webp" alt="A small oval cabin window looking out at the airport at dusk, runway lights glowing" width="1024" height="1024"><canvas id="view" aria-hidden="true"></canvas><div class="shade-clip" aria-hidden="true"><div class="shade-panel" id="shade"><i class="shade-shadow"></i></div><div class="shade-edge" id="shade-edge"></div></div><button class="shade-grab" id="shade-grab" type="button" aria-label="Lift the window shade"><span class="grab-tip" id="grab-tip" aria-hidden="true"><svg width="10" height="12" viewBox="0 0 10 12" fill="none"><path d="M5 12V2M1 5.5l4-4 4 4" stroke="currentColor" stroke-width="1.4"/></svg><span class="tip-fine">Drag the shade up</span><span class="tip-touch">Swipe the shade up</span></span></button></div>
       <p class="h-split d1 will" id="newyork" aria-hidden="true" data-reveal>New York</p>
       <div class="intro will" id="intro">
         <p class="sub rise" style="--d:500" id="intro-seat">Seat 1A,<br>by the window</p>
         <span class="rule rise" style="--d:600"></span>
-        <p class="copy rise" style="--d:700">A virtual Concorde flight from London Heathrow to New York JFK. About 3.5 hours. Scroll to open your window shade.</p>
+        <p class="copy rise" style="--d:700">A virtual Concorde flight from London Heathrow to New York JFK. About 3.5 hours. Lift the shade to look outside.</p>
       </div>
       <div class="scrollhint label will" id="scrollhint">
-        <span class="rise" style="--d:800"><svg width="10" height="12" viewBox="0 0 10 12" fill="none" aria-hidden="true"><path d="M5 0v10M1 6.5l4 4 4-4" stroke="currentColor" stroke-width="1.4"/></svg>Scroll down</span>
-        <span class="rise" style="--d:900">To open the shade</span>
+        <span class="rise" style="--d:800"><svg width="10" height="12" viewBox="0 0 10 12" fill="none" aria-hidden="true"><path d="M5 0v10M1 6.5l4 4 4-4" stroke="currentColor" stroke-width="1.4"/></svg><b id="hint-a">Lift the shade</b></span>
+        <span class="rise" style="--d:900" id="hint-b">To look outside</span>
       </div>
       <div class="factchip glass will" id="factchip">
         <span class="label muted">Why so small?</span>
