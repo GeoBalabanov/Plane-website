@@ -131,27 +131,53 @@ body.at-end .hud,body.at-end .stagebar{opacity:0}
 .h-split{position:absolute;white-space:nowrap;font-size:clamp(50px,9vw,146px);line-height:.86}
 #london{left:var(--gutter);top:17vh}
 #newyork{right:var(--gutter);top:55vh;text-align:right}
-.window{position:absolute;left:50%;top:50%;height:min(74vh,104vw);aspect-ratio:1;transform-origin:50% 59%}
+.window{position:absolute;z-index:2;left:50%;top:50%;height:min(74vh,104vw);aspect-ratio:1;transform-origin:50% 59%}
 .window img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 40px 70px rgba(0,0,0,.55))}
 .window canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 /* pulling back from the window: the cabin wall, and a row of windows that shares the window's transform */
-#boarding .wall{position:absolute;inset:0;opacity:0;pointer-events:none;
-  background:linear-gradient(180deg,#bdb6aa 0%,#d8d2c7 22%,#e4dfd5 50%,#d3ccc0 78%,#a9a196 100%)}
-#boarding .wall::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 calc(25vw - 1px),rgba(70,60,48,.10) calc(25vw - 1px) 25vw) 12.5vw 0,
-  radial-gradient(80% 60% at 50% 55%,transparent 40%,rgba(40,32,26,.35) 100%)}
-.winrow{position:absolute;left:50%;top:50%;height:min(74vh,104vw);aspect-ratio:1;transform-origin:50% 59%;pointer-events:none}
+#boarding .wall{position:absolute;inset:0;opacity:0;pointer-events:none;overflow:hidden;
+  /* a cabin sidewall: the dark edge of the overhead bins at the top, warm light washing down a curved cream wall, darker towards the floor */
+  background:radial-gradient(70% 55% at 50% 42%,rgba(255,240,214,.45),transparent 70%),
+    linear-gradient(180deg,#1d1a17 0%,#2e2925 7.5%,#57504a 8.6%,#b9b0a2 10.5%,#d9d2c4 22%,#e7e1d5 42%,#e2dbce 58%,#cfc6b6 72%,#a99f8f 86%,#7d7466 100%)}
+#boarding .wall > i{position:absolute;left:0;right:0;top:72%;height:28%;
+  background:linear-gradient(180deg,rgba(255,250,240,.55) 0,rgba(255,250,240,.55) 1px,rgba(60,50,40,.22) 2px,rgba(60,50,40,.06) 16%,rgba(40,32,26,.28) 100%)}
+#boarding .wall::before{content:"";position:absolute;left:0;right:0;top:0;height:11%;   /* reading lights in the bins, and the soft shadow under them */
+  background:radial-gradient(5px 3px at 12.5% 82%,rgba(255,226,170,.95),transparent),radial-gradient(5px 3px at 37.5% 82%,rgba(255,226,170,.95),transparent),
+    radial-gradient(5px 3px at 62.5% 82%,rgba(255,226,170,.95),transparent),radial-gradient(5px 3px at 87.5% 82%,rgba(255,226,170,.95),transparent),
+    radial-gradient(120px 60px at 12.5% 100%,rgba(255,214,150,.18),transparent),radial-gradient(120px 60px at 37.5% 100%,rgba(255,214,150,.18),transparent),
+    radial-gradient(120px 60px at 62.5% 100%,rgba(255,214,150,.18),transparent),radial-gradient(120px 60px at 87.5% 100%,rgba(255,214,150,.18),transparent);
+  box-shadow:0 10px 26px rgba(20,14,10,.35)}
+#boarding .wall::after{content:"";position:absolute;inset:0;mix-blend-mode:multiply;opacity:.9;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .55 0 0 0 0 .5 0 0 0 0 .42 0 0 0 .13 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+    repeating-linear-gradient(90deg,transparent 0 calc(25vw - 1px),rgba(70,60,48,.09) calc(25vw - 1px) 25vw) 12.5vw 0,
+    radial-gradient(85% 70% at 50% 50%,transparent 45%,rgba(40,32,26,.38) 100%)}
+.winrow{z-index:1;position:absolute;left:50%;top:50%;height:min(74vh,104vw);aspect-ratio:1;transform-origin:50% 59%;pointer-events:none}
 .win{position:absolute;inset:0;transform:translateX(calc(var(--k) * 112%))}
+.win::before{content:"";position:absolute;left:5%;top:12%;width:90%;height:92%;border-radius:50%;pointer-events:none;   /* daylight from the window on the wall around it */
+  background:radial-gradient(closest-side,rgba(255,248,232,.55),rgba(255,248,232,0));filter:blur(calc(6px / var(--s, 1)))}
+.win-own::before{background:radial-gradient(closest-side,rgba(255,196,150,.38),rgba(255,196,150,0))}   /* yours looks out at dusk */
 .win > img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 30px 50px rgba(40,30,20,.35))}
 .win-view{position:absolute;left:19.434%;top:26.37%;width:61.133%;height:60.55%;overflow:hidden;
   -webkit-mask:url(../assets/shade-mask.png) 0 0/100% 100% no-repeat;mask:url(../assets/shade-mask.png) 0 0/100% 100% no-repeat}
-.win-view img{width:100%;height:100%;object-fit:cover;filter:saturate(.95) contrast(1.04)}
+.win-view img{width:100%;height:100%;object-fit:cover;filter:saturate(.95) contrast(1.04);transform:scale(1.2);
+  animation:taxi var(--dur, 14s) ease-in-out infinite alternate}
+@keyframes taxi{from{transform:scale(1.2) translateX(var(--px, 4%))}to{transform:scale(1.2) translateX(calc(var(--px, 4%) * -1))}}
+.win-glare{position:absolute;inset:-30%;pointer-events:none;background:linear-gradient(115deg,transparent 42%,rgba(255,255,255,.26) 49%,rgba(255,255,255,.08) 52%,transparent 58%);
+  transform:translateX(-70%);animation:glare 9.6s ease-in-out var(--gd, 0s) infinite}
+@keyframes glare{0%{transform:translateX(-70%)}28%,100%{transform:translateX(70%)}}
+.win-rain{position:absolute;inset:0;pointer-events:none;opacity:.55;   /* rain running down the glass in Barbados */
+  background:repeating-linear-gradient(97deg,transparent 0 11px,rgba(220,232,244,.35) 11px 12px,transparent 12px 23px),
+    radial-gradient(2px 3px at 20% 30%,rgba(255,255,255,.6),transparent),radial-gradient(2px 3px at 64% 58%,rgba(255,255,255,.6),transparent),radial-gradient(2px 3px at 42% 76%,rgba(255,255,255,.6),transparent);
+  background-size:100% 160%,100% 100%,100% 100%,100% 100%;animation:rain 1.1s linear infinite}
+@keyframes rain{from{background-position:0 0,0 0,0 0,0 0}to{background-position:-8px 60%,0 0,0 0,0 0}}
+@media (prefers-reduced-motion:reduce){.win-view img,.win-glare,.win-rain{animation:none}}
 .win-view::after{content:"";position:absolute;inset:0;background:radial-gradient(90% 80% at 50% 40%,transparent 55%,rgba(10,14,22,.45) 100%),linear-gradient(160deg,rgba(255,255,255,.10),transparent 40%)}   /* the curve and the glare of the glass */
 .win-tag{position:absolute;left:50%;top:99%;transform:translateX(-50%);white-space:nowrap;opacity:var(--tag,0);
   font:500 calc(11px / var(--s, 1)) / 1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:#3a322b}
 .win-tag b{font-weight:600;color:#14294d;margin-right:.5em}
 /* until the airport photos are in, only your own window shows */
 .winrow:not([data-photos]) .win:not(.win-own),.winrow:not([data-photos]) ~ .winrow-note{display:none}
-.winrow-note{position:absolute;left:50%;bottom:16vh;transform:translateX(-50%);margin:0;opacity:0;color:#3a322b;text-align:center;max-width:calc(100vw - 2 * var(--gutter))}
+.winrow-note{position:absolute;left:50%;top:17vh;transform:translateX(-50%);margin:0;opacity:0;color:#3a322b;text-align:center;max-width:calc(100vw - 2 * var(--gutter))}
 /* pull-down window shade, built from the shade in the photo and cut to the window recess (image box is 1024 units) */
 .shade-clip{position:absolute;left:19.434%;top:26.37%;width:61.133%;height:60.55%;overflow:hidden;pointer-events:none;
   -webkit-mask:url(../assets/shade-mask.png) 0 0/100% 100% no-repeat;mask:url(../assets/shade-mask.png) 0 0/100% 100% no-repeat}

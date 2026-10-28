@@ -264,7 +264,7 @@
       const tf = `translate(-50%,-59%) scale(${s})`;
       set($('window'), tf); set($('winrow'), tf);
       $('winrow').style.setProperty('--s', s.toFixed(4));
-      $('winrow').style.opacity = RM ? 0 : seg(p, .3, .5).toFixed(3);
+      $('winrow').style.opacity = RM ? 0 : seg(p, .38, .52).toFixed(3);
       $('winrow').style.setProperty('--tag', seg(p, .55, .66).toFixed(3));
       $('wall').style.opacity = RM ? 0 : (seg(p, .3, .55) * .97).toFixed(3);
       $('winrow-note').style.opacity = RM ? 0 : (seg(p, .56, .66) * (1 - seg(p, .74, .8))).toFixed(3);
@@ -273,8 +273,8 @@
       set($('newyork'), `translateX(${apart*55}vw)`, 1 - seg(p, .42, .66));
       $('london').style.filter = $('newyork').style.filter = apart > 0 ? `blur(${apart*6}px)` : '';
       $('intro').style.opacity = $('scrollhint').style.opacity = 1 - seg(p, .2, .3);
-      const f = seg(p, .3, .38) * (1 - seg(p, .5, .56));
-      set($('factchip'), `translateY(${(1 - seg(p, .3, .38))*30}px)`, f);
+      const f = seg(p, .22, .3) * (1 - seg(p, .36, .42));              // gone before the other windows come in
+      set($('factchip'), `translateY(${(1 - seg(p, .22, .3))*30}px)`, f);
       $('factchip').style.visibility = f > 0 ? 'visible' : 'hidden';
       $('veil').style.opacity = seg(p, .8, .98);
       viewOn = p < 1 && rects[0].bottom > 0;
