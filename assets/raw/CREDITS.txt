@@ -22,3 +22,13 @@ converted to mp3 and levelled
 Captain figure (flight deck): assets/models/pilot.glb is "Xbot.glb" from the three.js examples
 (github.com/mrdoob/three.js, r149, examples/models/gltf), a Mixamo character with its walk and idle animations.
 Recoloured as a dark uniform and given a cap in code; the sitting pose is set in code.
+
+Window row in the boarding scene (Wikimedia Commons; cropped to a square, resized, shared under the same licences):
+- assets/airports/cdg.webp: "Etihad B777 A6-ETS – Paris LFPG – (2017-01-05).jpeg" by Ryan Sharpe, CC BY-SA 4.0
+  https://commons.wikimedia.org/wiki/File:Etihad_B777_A6-ETS_%E2%80%93_Paris_LFPG_%E2%80%93_(2017-01-05).jpeg
+- assets/airports/jfk.webp: "Eastern Airlines (2D) Boeing 767-336(ER) N703KW taxiing at JFK Airport.jpg" by Adam E. Moreira (AEMoreira042281), CC BY-SA 4.0
+  https://commons.wikimedia.org/wiki/File:Eastern_Airlines_(2D)_Boeing_767-336(ER)_N703KW_taxiing_at_JFK_Airport.jpg
+- assets/airports/iad.webp: "HZ-AK18 Boeing 777-300ER of Saudi Arabian Airlines.jpg" by PlanespotterA320, CC BY-SA 4.0 (taxiing at Washington Dulles)
+  https://commons.wikimedia.org/wiki/File:HZ-AK18_Boeing_777-300ER_of_Saudi_Arabian_Airlines.jpg
+- assets/airports/bgi.webp: "Sir Grantley Adams Int Airport, Barbados-05.jpg" by CaribDigita, public domain
+  https://commons.wikimedia.org/wiki/File:Sir_Grantley_Adams_Int_Airport,_Barbados-05.jpg

@@ -137,7 +137,7 @@ body.at-end .hud,body.at-end .stagebar{opacity:0}
 /* pulling back from the window: the cabin wall, and a row of windows that shares the window's transform */
 #boarding .wall{position:absolute;inset:0;opacity:0;pointer-events:none;
   background:linear-gradient(180deg,#bdb6aa 0%,#d8d2c7 22%,#e4dfd5 50%,#d3ccc0 78%,#a9a196 100%)}
-#boarding .wall::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 calc(25vw - 1px),rgba(70,60,48,.10) calc(25vw - 1px) 25vw),
+#boarding .wall::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 calc(25vw - 1px),rgba(70,60,48,.10) calc(25vw - 1px) 25vw) 12.5vw 0,
   radial-gradient(80% 60% at 50% 55%,transparent 40%,rgba(40,32,26,.35) 100%)}
 .winrow{position:absolute;left:50%;top:50%;height:min(74vh,104vw);aspect-ratio:1;transform-origin:50% 59%;pointer-events:none}
 .win{position:absolute;inset:0;transform:translateX(calc(var(--k) * 112%))}
