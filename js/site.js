@@ -193,6 +193,22 @@
     list.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; picked = picked === b.dataset.route ? null : b.dataset.route; show(picked); });
   }
 
+  // the certificate rises into place when it comes into view, then leans a little towards the pointer
+  { const paper = $('certificate-paper'), G = window.gsap;
+    if (paper && G && !RM) {
+      G.set(paper, { y: 60, rotationX: 10, opacity: 0, transformPerspective: 1600 });
+      new IntersectionObserver((es, o) => { if (!es[0].isIntersecting) return; o.disconnect();
+        G.to(paper, { y: 0, rotationX: 0, opacity: 1, duration: 1.4, ease: 'expo.out' });
+        G.fromTo(paper.querySelector('.cert-word'), { backgroundPosition: '100% 0' }, { backgroundPosition: '0% 0', duration: 2.4, ease: 'power2.out', delay: .3 });
+      }, { threshold: .25 }).observe(paper);
+      if (matchMedia('(pointer:fine)').matches) {
+        paper.addEventListener('pointermove', e => { const r = paper.getBoundingClientRect();
+          G.to(paper, { rotationY: ((e.clientX - r.left) / r.width - .5) * 6, rotationX: -((e.clientY - r.top) / r.height - .5) * 5, duration: .8, ease: 'power3.out', overwrite: 'auto' }); });
+        paper.addEventListener('pointerleave', () => G.to(paper, { rotationX: 0, rotationY: 0, duration: 1, ease: 'power3.out' }));
+      }
+    }
+  }
+
   // ---------- the window shade: the visitor lifts it themselves, by dragging, swiping, the wheel or the keyboard ----------
   // Until it is up the page holds still at the window; once it is up, scrolling takes over again.
   const shade = { v: 0, locked: false, done: false };
