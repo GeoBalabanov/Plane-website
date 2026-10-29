@@ -250,6 +250,7 @@
           <div class="walk-spots" id="walk-spots"><button type="button" aria-current="true">Aisle</button><button type="button">Cabin</button><button type="button">Front wall</button><button type="button">Flight deck</button></div>
           <button class="walk-step" id="walk-fwd" type="button" aria-label="Step forward"><span class="onward-t">On to take-off</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
         </nav>
+        <button class="walk-360" id="walk-360" type="button" aria-haspopup="dialog" aria-controls="tour360"><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="12" rx="9.25" ry="4.2"/><path d="M12 2.75v18.5"/><circle cx="12" cy="12" r="9.25"/></svg><span>360° tour</span></button>
         <article class="walk-info glass dark" id="walk-info" hidden aria-live="polite"><div class="row label"><span class="muted">Aisle</span><button class="x" type="button" aria-label="Close this note"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><h3 class="sub"></h3><span class="rule"></span><p class="copy"></p></article>
       </div>
       <h2 aria-label="Step inside">
@@ -268,6 +269,17 @@
       <article class="tourcard glass dark"><div class="row label"><span class="muted">Cabin tour</span><span>5 / 5</span></div><h3 class="sub">Three crew up front</h3><span class="rule"></span><p class="copy">Captain, first officer and flight engineer. The engineer faces a whole wall of dials on the right.</p></article>
     </div>
   </section>
+
+  <!-- a real 3D scan of a Concorde cabin, shown in the official Matterport player (loaded only when opened) -->
+  <div class="tour360" id="tour360" role="dialog" aria-modal="true" aria-label="360 degree tour of a Concorde" hidden>
+    <div class="t360-frame"><iframe title="Explore Concorde in 3D, a Matterport tour by Tosolini Productions" data-src="https://my.matterport.com/show/?m=uLQ9ZMRpPWY&play=1&qs=1&title=0&help=0&hr=0&search=0" allow="fullscreen; xr-spatial-tracking" allowfullscreen></iframe>
+      <div class="t360-load label" aria-hidden="true"><span class="t360-spin"></span>Loading the 3D tour</div></div>
+    <div class="t360-bar">
+      <div class="t360-title"><span class="label">360° tour</span><span class="sub">Walk through a real Concorde</span></div>
+      <p class="t360-credit">3D scan by Tosolini Productions, shown with Matterport. <a href="https://my.matterport.com/show/?m=uLQ9ZMRpPWY" target="_blank" rel="noopener">Open full screen</a></p>
+      <button class="walk-exit t360-close" id="t360-close" type="button" aria-label="Close the 360 degree tour"><span>Back to the cabin</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+  </div>
 
   <!-- 3. Take-off: the droop nose -->
   <section class="scene" id="droop" data-name="Take-off">
@@ -462,7 +474,7 @@
       </section>
 
       <div class="credits label">
-        <div class="l"><span class="rule"></span><p><span>Concorde: A Transatlantic Journey</span><span>Human Centered Design student project</span><span>3D model: <a href="https://sketchfab.com/3d-models/concorde-6d95290363474798a429a38bbf9ad49d">"Concorde"</a> by <a href="https://sketchfab.com/manilov.ap">manilov.ap</a> on Sketchfab, <a href="https://creativecommons.org/licenses/by/4.0/">CC Attribution</a>, nose split for this site</span><span>Sky, asphalt and grass: <a href="https://polyhaven.com">Poly Haven</a> (CC0)</span><span>Cabin and flight deck photos of Concorde G-BOAA: BenTanXiaoMing (<a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>) and Alan Wilson (<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC BY-SA 2.0</a>), Wikimedia Commons; depth added for this site, shared under the same licences</span><span>Footsteps: Kenney (CC0)</span><span>Captain figure and walk: "X Bot" by <a href="https://www.mixamo.com">Mixamo</a>, from the <a href="https://github.com/mrdoob/three.js">three.js</a> examples</span><span>Earth footage: NASA, International Space Station, Expedition 67/68 (public domain)</span><span>Airport views, Wikimedia Commons: Paris CDG by Ryan Sharpe, New York JFK by Adam E. Moreira, Washington Dulles by PlanespotterA320 (all <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>), Barbados by CaribDigita (public domain); cropped for this site</span></p></div>
+        <div class="l"><span class="rule"></span><p><span>Concorde: A Transatlantic Journey</span><span>Human Centered Design student project</span><span>3D model: <a href="https://sketchfab.com/3d-models/concorde-6d95290363474798a429a38bbf9ad49d">"Concorde"</a> by <a href="https://sketchfab.com/manilov.ap">manilov.ap</a> on Sketchfab, <a href="https://creativecommons.org/licenses/by/4.0/">CC Attribution</a>, nose split for this site</span><span>Sky, asphalt and grass: <a href="https://polyhaven.com">Poly Haven</a> (CC0)</span><span>Cabin and flight deck photos of Concorde G-BOAA: BenTanXiaoMing (<a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>) and Alan Wilson (<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC BY-SA 2.0</a>), Wikimedia Commons; depth added for this site, shared under the same licences</span><span>Footsteps: Kenney (CC0)</span><span>Captain figure and walk: "X Bot" by <a href="https://www.mixamo.com">Mixamo</a>, from the <a href="https://github.com/mrdoob/three.js">three.js</a> examples</span><span>Earth footage: NASA, International Space Station, Expedition 67/68 (public domain)</span><span>Airport views, Wikimedia Commons: Paris CDG by Ryan Sharpe, New York JFK by Adam E. Moreira, Washington Dulles by PlanespotterA320 (all <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>), Barbados by CaribDigita (public domain); cropped for this site</span><span>360° cabin tour: <a href="https://my.matterport.com/show/?m=uLQ9ZMRpPWY">"Concorde"</a> by Tosolini Productions, shown in the Matterport player</span></p></div>
       </div>
     </section>
   </div>

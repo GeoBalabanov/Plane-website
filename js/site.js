@@ -209,6 +209,26 @@
     }
   }
 
+  // the 360° tour: the Matterport player only loads when the visitor opens it, and Escape or the button closes it
+  { const sheet = $('tour360'), open = $('walk-360'), close = $('t360-close');
+    if (sheet && open) {
+      const frame = sheet.querySelector('iframe');
+      frame.addEventListener('load', () => sheet.classList.add('ready'));
+      const show = () => {
+        if (!frame.src) frame.src = frame.dataset.src;
+        sheet.hidden = false; document.documentElement.classList.add('touring'); window.lenis && window.lenis.stop();
+        requestAnimationFrame(() => requestAnimationFrame(() => sheet.classList.add('on'))); close.focus({ preventScroll: true });
+      };
+      const hide = () => {
+        sheet.classList.remove('on'); document.documentElement.classList.remove('touring');
+        if (!document.documentElement.classList.contains('walking')) window.lenis && window.lenis.start();
+        setTimeout(() => { if (!sheet.classList.contains('on')) sheet.hidden = true; }, RM ? 0 : 500); open.focus({ preventScroll: true });
+      };
+      open.addEventListener('click', show); close.addEventListener('click', hide);
+      addEventListener('keydown', e => { if (e.key === 'Escape' && !sheet.hidden) { e.stopImmediatePropagation(); hide(); } }, true);
+    }
+  }
+
   // ---------- the window shade: the visitor lifts it themselves, by dragging, swiping, the wheel or the keyboard ----------
   // Until it is up the page holds still at the window; once it is up, scrolling takes over again.
   const shade = { v: 0, locked: false, done: false };

@@ -32,3 +32,5 @@ Window row in the boarding scene (Wikimedia Commons; cropped to a square, resize
   https://commons.wikimedia.org/wiki/File:HZ-AK18_Boeing_777-300ER_of_Saudi_Arabian_Airlines.jpg
 - assets/airports/bgi.webp: "Sir Grantley Adams Int Airport, Barbados-05.jpg" by CaribDigita, public domain
   https://commons.wikimedia.org/wiki/File:Sir_Grantley_Adams_Int_Airport,_Barbados-05.jpg
+- 360° tour in the cabin: "Concorde" Matterport tour by Tosolini Productions, embedded with the official Matterport player (not copied)
+  https://my.matterport.com/show/?m=uLQ9ZMRpPWY
