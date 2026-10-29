@@ -184,6 +184,15 @@
   }
   machmeter(.95);
 
+  // Concorde's network: hovering, focusing or tapping a route turns the globe to it
+  { const list = $('route-list'); let picked = null;
+    const show = id => { if (window.G3D) window.G3D.focus(id); list.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.route === id)); };
+    list.addEventListener('pointerover', e => { const b = e.target.closest('button'); if (b && e.pointerType === 'mouse') show(b.dataset.route); });
+    list.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') show(picked); });
+    list.addEventListener('focusin', e => { const b = e.target.closest('button'); if (b) show(b.dataset.route); });
+    list.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; picked = picked === b.dataset.route ? null : b.dataset.route; show(picked); });
+  }
+
   // ---------- the window shade: the visitor lifts it themselves, by dragging, swiping, the wheel or the keyboard ----------
   // Until it is up the page holds still at the window; once it is up, scrolling takes over again.
   const shade = { v: 0, locked: false, done: false };
@@ -363,13 +372,15 @@
       $('stretch-bar').style.transform = `scaleX(${1 + .06 * ease(seg(p, .7, .95))})`;
     }
     // ---- 7 arrival (the globe and its arcs are driven in globe3d.js)
-    { const p = P.arrival;
+    { const P7 = P.arrival, p = clamp(P7 / .7);                    // the crossing and landing take the first 70%, the network the rest
+      P.arrivalA = p; P.net = seg(P7, .72, .96);
       P.endIn = clamp((vh - rects[rects.length - 1].top) / vh);
       set($('bigword'), `translate(-50%, ${RM ? 0 : lerp(34, 0, ease(seg(p, 0, .85)))}vh)`, (.4 + .6 * seg(p, 0, .3)) * (1 - .55 * P.endIn));
       const t = ease(seg(p, .35, .6)), out = seg(p, .82, .97);
       set($('ticket'), `translateY(${(1 - t) * 110 - out*40}vh) rotate(${lerp(10, -4, t)}deg)`, 1 - out);
       $('landing').style.opacity = seg(p, .62, .75) * (1 - seg(p, .92, 1));
       $('legend').style.opacity = seg(p, .4, .5) * (1 - seg(p, .92, 1));
+      const rv = seg(P7, .73, .8) * (1 - P.endIn); $('routes').style.opacity = rv; $('routes').style.visibility = rv > .02 ? 'visible' : 'hidden';
     }
 
     // ---- HUD + stage bar

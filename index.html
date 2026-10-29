@@ -344,7 +344,7 @@
   <div class="finale" id="finale">
     <div class="finale-bg">
       <p class="bigword" id="bigword" aria-hidden="true">Atlantic</p>
-      <canvas class="gl" id="globe3d" role="img" aria-label="A 3D globe turning to the North Atlantic. An orange arc draws the Concorde crossing from London to New York, with a slower white arc for a subsonic jet"></canvas>
+      <canvas class="gl" id="globe3d" role="img" aria-label="A 3D globe turning to the North Atlantic. An orange arc draws the Concorde crossing from London to New York, with a slower white arc for a subsonic jet. Then the camera pulls back and Concorde's other routes draw in gold: Paris to New York, London and Paris to Washington, London to Bahrain and Singapore, Paris to Dakar and Rio de Janeiro, Paris to Caracas, London to Barbados, and Washington to Miami, Dallas/Fort Worth and Mexico City"></canvas>
       <span class="g-label" id="g-lhr" aria-hidden="true"><b>LHR</b></span>
       <span class="g-label" id="g-jfk" aria-hidden="true"><b>JFK</b></span>
     </div>
@@ -363,6 +363,24 @@
           <span class="label">Approach</span>
           <span class="rule"></span>
           <p class="copy">Descending into New York. For landing the nose drops again, now 12.5 degrees.</p>
+        </div>
+        <!-- Concorde's network: hover or tap a route and the globe turns to it -->
+        <div class="routes will" id="routes">
+          <div class="r-head"><span class="label">Concorde's network</span><span class="label muted">Hover a route, or drag the globe</span></div>
+          <span class="hair"></span>
+          <ul id="route-list">
+            <li><button type="button" data-route="lhr-jfk" class="own"><span class="r-code">LHR / JFK</span><span class="r-name">London → New York <em>your flight</em></span></button></li>
+            <li><button type="button" data-route="cdg-jfk"><span class="r-code">CDG / JFK</span><span class="r-name">Paris → New York</span></button></li>
+            <li><button type="button" data-route="lhr-iad"><span class="r-code">LHR / IAD</span><span class="r-name">London → Washington</span></button></li>
+            <li><button type="button" data-route="cdg-iad"><span class="r-code">CDG / IAD</span><span class="r-name">Paris → Washington</span></button></li>
+            <li><button type="button" data-route="lhr-sin"><span class="r-code">LHR / SIN</span><span class="r-name">London → Bahrain → Singapore</span></button></li>
+            <li><button type="button" data-route="cdg-gig"><span class="r-code">CDG / GIG</span><span class="r-name">Paris → Dakar → Rio de Janeiro</span></button></li>
+            <li><button type="button" data-route="cdg-ccs"><span class="r-code">CDG / CCS</span><span class="r-name">Paris → Caracas</span></button></li>
+            <li><button type="button" data-route="lhr-bgi"><span class="r-code">LHR / BGI</span><span class="r-name">London → Barbados <em>seasonal</em></span></button></li>
+            <li><button type="button" data-route="iad-mia"><span class="r-code">IAD / MIA</span><span class="r-name">Washington → Miami</span></button></li>
+            <li><button type="button" data-route="iad-dfw"><span class="r-code">IAD / DFW</span><span class="r-name">Washington → Dallas/Fort Worth <em>with Braniff</em></span></button></li>
+            <li><button type="button" data-route="iad-mex"><span class="r-code">IAD / MEX</span><span class="r-name">Washington → Mexico City</span></button></li>
+          </ul>
         </div>
         <div class="legend label will" id="legend">
           <span class="hair"></span>

@@ -1,5 +1,7 @@
 /* The finale globe in Three.js: a dark Earth with warm grey land (outlines from Natural Earth, assets/land.json),
-   the Concorde crossing drawn as an orange arc and the slower subsonic crossing as a white one.
+   the Concorde crossing drawn as an orange arc and the slower subsonic crossing as a white one. After the landing
+   the camera pulls back and Concorde's other routes draw in gold; the route list turns the globe to each one,
+   and the globe can be turned by dragging it.
    Globe axes: +y north; longitude -90 faces +z before any rotation. */
 (() => {
   if (!window.THREE) return;
@@ -79,6 +81,39 @@
   const head = dot(LHR, .011, flame), slowHead = dot(LHR, .007, paper);
   const drawTo = (m, k, tip) => { m.geometry.setDrawRange(0, Math.floor(m.userData.count * k / 48) * 48); tip.position.copy(m.userData.curve.getPoint(clamp(k))); tip.visible = k > .002; };
 
+  /* ---------- Concorde's network: after the landing, the other routes it flew draw themselves in gold ---------- */
+  const AP = { LHR: [51.47, -.45, 'London'], JFK: [40.64, -73.78, 'New York'], CDG: [49.01, 2.55, 'Paris'], IAD: [38.95, -77.46, 'Washington'],
+    BAH: [26.27, 50.63, 'Bahrain'], SIN: [1.36, 103.99, 'Singapore'], DKR: [14.74, -17.49, 'Dakar'], GIG: [-22.81, -43.25, 'Rio de Janeiro'],
+    CCS: [10.6, -66.99, 'Caracas'], BGI: [13.07, -59.49, 'Barbados'], MIA: [25.79, -80.29, 'Miami'], DFW: [32.9, -97.04, 'Dallas/Fort Worth'], MEX: [19.44, -99.07, 'Mexico City'] };
+  const ROUTES = window.CONCORDE_ROUTES = [
+    { id: 'lhr-jfk', legs: [['LHR', 'JFK']], own: true }, { id: 'cdg-jfk', legs: [['CDG', 'JFK']] },
+    { id: 'lhr-iad', legs: [['LHR', 'IAD']] }, { id: 'cdg-iad', legs: [['CDG', 'IAD']] },
+    { id: 'lhr-sin', legs: [['LHR', 'BAH'], ['BAH', 'SIN']] }, { id: 'cdg-gig', legs: [['CDG', 'DKR'], ['DKR', 'GIG']] },
+    { id: 'cdg-ccs', legs: [['CDG', 'CCS']] }, { id: 'lhr-bgi', legs: [['LHR', 'BGI']] },
+    { id: 'iad-mia', legs: [['IAD', 'MIA']] }, { id: 'iad-dfw', legs: [['IAD', 'DFW']] }, { id: 'iad-mex', legs: [['IAD', 'MEX']] }];
+  const gold = () => new T.MeshBasicMaterial({ color: 0xd7b46a, transparent: true, opacity: .9 });
+  ROUTES.forEach(r => {
+    r.mat = r.own ? flame : gold();
+    r.arcs = r.own ? [] : r.legs.map(([a, b]) => { const A = ll(AP[a][0], AP[a][1]), B = ll(AP[b][0], AP[b][1]); return arc(A, B, .03 + .05 * A.angleTo(B), .0032, r.mat); });
+    r.arcs.forEach(m => m.geometry.setDrawRange(0, 0));
+    const ids = [...new Set(r.legs.flat())], mid = ids.reduce((acc, id) => acc.add(ll(AP[id][0], AP[id][1])), new T.Vector3()).normalize();
+    r.ids = ids; r.lat = 90 - Math.acos(mid.y) / DEG; r.lon = Math.atan2(mid.z, -mid.x) / DEG - 180;
+  });
+  const apDots = {};
+  Object.keys(AP).forEach(id => { if (id === 'LHR' || id === 'JFK') return; apDots[id] = dot(ll(AP[id][0], AP[id][1]), .007, paper); apDots[id].visible = false; });
+  // labels for every airport in the network (LHR and JFK already have theirs)
+  const netLabels = Object.keys(AP).filter(id => id !== 'LHR' && id !== 'JFK').map(id => {
+    const el = document.createElement('span'); el.className = 'g-label g-net'; el.setAttribute('aria-hidden', 'true'); el.innerHTML = `<b>${id}</b>`;
+    canvas.parentNode.appendChild(el); return [el, ll(AP[id][0], AP[id][1]), id];
+  });
+  let focus = null, fLon = 0, fLat = 0, dragLon = 0, dragLat = 0;
+  // drag the globe to turn it
+  { let px = null, py = 0;
+    canvas.addEventListener('pointerdown', e => { px = e.clientX; py = e.clientY; canvas.setPointerCapture(e.pointerId); canvas.classList.add('held'); });
+    canvas.addEventListener('pointermove', e => { if (px === null) return; dragLon += (e.clientX - px) * .25; dragLat = clamp(dragLat + (e.clientY - py) * .18, -35, 35); px = e.clientX; py = e.clientY; api.dirty = true; });
+    const up = () => { px = null; canvas.classList.remove('held'); };
+    canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up); }
+
   // HTML labels pinned to the two airports
   const labels = [[document.getElementById('g-lhr'), LHR], [document.getElementById('g-jfk'), JFK]];
   const v = new T.Vector3(), nrm = new T.Vector3();
@@ -97,35 +132,62 @@
     update(P, t) {
       if (!visible()) return;
       api.dirty = false;
-      const p = P.arrival; endK = P.endIn || 0;
-      const enter = ease(seg(p, 0, .35)), e = ease(endK);
+      const p = P.arrivalA, pn = P.net || 0; endK = P.endIn || 0;
+      const enter = ease(seg(p, 0, .35)), e = ease(endK), kN = ease(seg(pn, 0, .3));
       const fit = clamp(cam.aspect / 1.55, .4, 1);              // keep the globe inside a portrait screen
-      const lon = lerp(12, -38, enter) - 12 * ease(seg(p, .35, 1)) - 22 * e - (RM ? 0 : endK * t * .0012);
-      const lat = lerp(26, 42, enter) - 8 * e;
+      // the crossing view, then the network view: pulled back over the Atlantic, or turned to the route in focus
+      const targetLon = focus ? focus.lon : -32, targetLat = focus ? clamp(focus.lat, -10, 45) : 26;
+      const k = RM ? 1 : .08; fLon += (targetLon - fLon) * k; fLat += (targetLat - fLat) * k;
+      if (Math.abs(targetLon - fLon) > .05 || Math.abs(targetLat - fLat) > .05) api.dirty = true;
+      const lonA = lerp(12, -38, enter) - 12 * ease(seg(p, .35, 1));
+      const lon = lerp(lonA, fLon, kN) - 22 * e * (1 - kN) + dragLon - (RM ? 0 : endK * t * .0012);
+      const lat = lerp(lerp(26, 42, enter), fLat, kN) - 8 * e * (1 - kN) + dragLat;
       const P0 = ll(0, lon);
       spin.rotation.y = -Math.atan2(P0.x, P0.z);
       tilt.rotation.x = lat * DEG;
-      const s = lerp(lerp(1.05, 1.36, enter), 1.12, e) * fit;
+      const s = lerp(lerp(lerp(1.05, 1.36, enter), 1.12, e), .92, kN) * fit;
       tilt.scale.setScalar(s);
-      tilt.position.set(lerp(lerp(2.7, 1.0, enter), 0, e) * fit * (fit < 1 ? .2 : 1), lerp(lerp(-1.3, -.72, enter), -.28, e) * (fit < 1 ? .55 : 1), 0);
+      tilt.position.set(lerp(lerp(lerp(2.7, 1.0, enter), 0, e) * fit * (fit < 1 ? .2 : 1), fit < 1 ? 0 : .78, kN),   // the network sits right of the route list
+         lerp(lerp(lerp(-1.3, -.72, enter), -.28, e), -.12, kN) * (fit < 1 ? .55 : 1), 0);
       const draw = ease(seg(p, .3, .7));
       drawTo(fast, draw, head);
-      drawTo(slow, draw * .5 + .5 * ease(seg(endK, .1, .9)), slowHead);     // by the time Concorde lands, the subsonic jet is half way
+      drawTo(slow, (draw * .5 + .5 * ease(seg(endK, .1, .9))) * (1 - kN), slowHead);     // the subsonic jet bows out when the network comes in
+      slow.visible = slowHead.visible = kN < .99;
       jfkDot.scale.setScalar(1 + .5 * seg(draw, .9, 1));
+      // the other routes draw one after another; the route in focus is bright, the rest step back
+      ROUTES.forEach((r, i) => {
+        if (r.own) return;
+        const d = ease(seg(pn, .12 + i * .045, .42 + i * .045));
+        r.arcs.forEach((m, j) => m.geometry.setDrawRange(0, Math.floor(m.userData.count * clamp(d * r.arcs.length - j) / 48) * 48));
+        r.mat.opacity = focus ? (focus === r ? 1 : .18) : .85;
+        r.ids.forEach(id => { if (apDots[id]) apDots[id].visible = d > .02; });
+      });
+      flame.transparent = true; flame.opacity = focus && !focus.own ? .3 : 1;
       canvas.style.opacity = lerp(1, .55, e);
       renderer.render(scene, cam);
       const W = canvas.clientWidth, H = canvas.clientHeight;
-      labels.forEach(([el, at], i) => {
-        if (!el) return;
+      const place = (el, at) => {
         v.copy(at).multiplyScalar(1.004); spin.localToWorld(v);
         nrm.copy(v).sub(tilt.position).normalize();
         const facing = nrm.dot(cam.position.clone().sub(v).normalize());
         v.project(cam);
         el.style.transform = `translate(${(v.x + 1) / 2 * W}px, ${(1 - v.y) / 2 * H}px)`;
-        el.style.opacity = seg(facing, .05, .3) * (i ? seg(draw, .9, 1) : seg(p, .2, .32)) * (1 - e);
+        return seg(facing, .05, .3);
+      };
+      labels.forEach(([el, at], i) => {
+        if (!el) return;
+        const f = place(el, at), base = i ? seg(draw, .9, 1) : seg(p, .2, .32);
+        const inFocus = !focus || focus.ids.includes(i ? 'JFK' : 'LHR');
+        el.style.opacity = f * lerp(base * (1 - e), inFocus ? 1 : .3, kN);
+      });
+      netLabels.forEach(([el, at, id]) => {
+        if (kN <= 0) { el.style.opacity = 0; return; }
+        const r = ROUTES.find(q => q.ids.includes(id) && !q.own), d = seg(pn, .12 + ROUTES.indexOf(r) * .045, .3 + ROUTES.indexOf(r) * .045);
+        el.style.opacity = place(el, at) * d * (focus ? (focus.ids.includes(id) ? 1 : .2) : .75);
       });
     },
-    animating: () => !RM && endK > 0 && visible(),
+    focus(id) { focus = ROUTES.find(r => r.id === id) || null; api.dirty = true; },
+    animating: () => visible() && ((!RM && endK > 0) || api.dirty),
     resize
   };
 })();
