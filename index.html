@@ -322,16 +322,15 @@
         <p class="copy muted">At Mach 2 the airframe gets hot. The nose reaches about 127°C and the plane stretches by some centimetres.</p>
         <div class="stretch label"><i id="stretch-bar"></i><span>+ some cm</span></div>
       </div>
-      <!-- the climb: an altimeter that rises with the camera, past Everest and the height of today's airliners -->
+      <!-- how high that is: a scale that draws itself upwards, lighting Everest, today's airliners, then Concorde -->
       <div class="altimeter will" id="altimeter" aria-hidden="true">
         <div class="alt-track">
           <i class="alt-fill" id="alt-fill"></i>
           <span class="alt-tick" style="--h:0">0</span><span class="alt-tick" style="--h:.1667">10,000</span><span class="alt-tick" style="--h:.3333">20,000</span>
           <span class="alt-tick" style="--h:.5">30,000</span><span class="alt-tick" style="--h:.6667">40,000</span><span class="alt-tick" style="--h:.8333">50,000</span>
-          <span class="alt-ref" style="--h:.4839">Mount Everest <em>29,032 ft</em></span>
-          <span class="alt-ref" style="--h:.5833">Airliners today <em>about 35,000 ft</em></span>
-          <span class="alt-ref alt-top" style="--h:1">Concorde <em>60,000 ft</em></span>
-          <b class="alt-now" id="alt-now">0 ft</b>
+          <span class="alt-ref" data-h=".4839" style="--h:.4839">Mount Everest <em>29,032 ft</em></span>
+          <span class="alt-ref" data-h=".5833" style="--h:.5833">Airliners today <em>about 35,000 ft</em></span>
+          <span class="alt-ref alt-top" data-h=".995" style="--h:1">Concorde <em>60,000 ft</em></span>
         </div>
       </div>
     </div>

@@ -230,6 +230,7 @@
     if (!RM && G()) G().fromTo(shade, { v: 0 }, { v: .06, duration: .7, ease: 'sine.inOut', yoyo: true, repeat: 3, delay: 1.4, onUpdate: () => setShade(shade.v, true) });  // a nudge shows it moves
   });
 
+  const altRefs = [...document.querySelectorAll('#altimeter .alt-ref')];
   const iDroop = scenes.indexOf($('droop')), iBoom = scenes.indexOf($('boom'));
   let last = -1, lastP = null, dirty = true;
   function update() {
@@ -331,15 +332,14 @@
     }
     // ---- 6 cruise
     { const p = P.cruise;
-      // the climb: from just above the clouds, where the horizon is flat and the sky blue, the camera pulls back
-      // until the Earth curves away under a near-black sky; the altimeter climbs with it
+      // how high: from just above the clouds, where the horizon is flat and the sky blue, the camera pulls back
+      // until the Earth curves away under a near-black sky; beside it a scale draws itself up to Concorde's height
       const climb = RM ? 1 : ease(seg(p, 0, .46));
-      set($('earth'), RM ? 'none' : `scale(${lerp(2.3, 1.03, climb)})`);
-      $('earth').style.filter = climb < 1 ? `blur(${((1 - climb) * 4).toFixed(2)}px)` : '';
+      set($('earth'), RM ? 'none' : `scale(${lerp(1.85, 1.03, climb)})`);
+      $('earth').style.filter = climb < 1 ? `blur(${((1 - climb) * 1.2).toFixed(2)}px)` : '';
       $('lowsky').style.opacity = (1 - climb).toFixed(3);
       $('alt-fill').style.transform = `scaleY(${climb.toFixed(4)})`;
-      $('alt-now').style.bottom = (climb * 100).toFixed(2) + '%';
-      $('alt-now').textContent = (Math.round(climb * 600) * 100).toLocaleString('en-US') + ' ft';
+      altRefs.forEach(r => r.classList.toggle('lit', climb >= +r.dataset.h));
       set($('altimeter'), '', 1 - seg(p, .44, .54));
       const a = 1 - seg(p, .42, .55), h = seg(p, .55, .68);
       set($('alt-block'), `translateY(${-(1-a)*30}px)`, a);
