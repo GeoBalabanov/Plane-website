@@ -171,6 +171,34 @@
   }
   // droop3d.js sends { deg, air }: the angle, and whether the aircraft has left the runway
   addEventListener('concorde:nose', e => typeof e.detail === 'number' ? noseReadout(e.detail) : noseReadout(e.detail.deg, e.detail.air));
+  // the Machmeter on Concorde's cabin wall: green seven-segment digits behind black glass, reading like "M1,70"
+  const machSvg = $('mach-svg'), machBox = $('machmeter'); let machShown = '';
+  const SEG = (() => {
+    const t = 11, L = 6, R = 50, T = 6, M = 50, B = 94, g = 3;
+    const h = (x0, x1, y) => [[x0, y], [x0 + t / 2, y - t / 2], [x1 - t / 2, y - t / 2], [x1, y], [x1 - t / 2, y + t / 2], [x0 + t / 2, y + t / 2]];
+    const v = (x, y0, y1) => [[x, y0], [x + t / 2, y0 + t / 2], [x + t / 2, y1 - t / 2], [x, y1], [x - t / 2, y1 - t / 2], [x - t / 2, y0 + t / 2]];
+    return { a: h(L + g, R - g, T), b: v(R, T + g, M - g), c: v(R, M + g, B - g), d: h(L + g, R - g, B), e: v(L, M + g, B - g), f: v(L, T + g, M - g), g: h(L + g, R - g, M) };
+  })();
+  const DIG = ['abcdef', 'bc', 'abged', 'abgcd', 'fgbc', 'afgcd', 'afgedc', 'abc', 'abcdefg', 'abcdfg'];
+  const poly = (pts, x, on) => `<polygon class="${on ? 'on' : 'off'}" points="${pts.map(([a, b]) => `${(a + x).toFixed(1)},${b}`).join(' ')}"/>`;
+  function machmeter(m) {
+    const txt = 'M' + m.toFixed(2).replace('.', ',');
+    if (txt === machShown) return; machShown = txt;
+    let x = 4, out = '';
+    for (const ch of txt) {
+      if (ch === 'M') {                                          // the M: four uprights and a V from the top corners
+        out += ['b', 'c', 'e', 'f'].map(k => poly(SEG[k], x, 1)).join('') +
+          `<path class="on" d="M${x + 9} 9 L${x + 28} 44 L${x + 47} 9" fill="none" stroke-width="9" stroke-linejoin="round"/>`;
+        x += 66;
+      } else if (ch === ',') { out += `<polygon class="on" points="${x + 2},86 ${x + 12},86 ${x + 8},104 ${x - 2},104"/>`; x += 20; }
+      else { const on = DIG[+ch]; out += Object.keys(SEG).map(k => poly(SEG[k], x, on.includes(k))).join(''); x += 62; }
+    }
+    machSvg.setAttribute('viewBox', `0 0 ${x + 4} 108`);
+    machSvg.innerHTML = `<g transform="skewX(-6) translate(6 0)">${out}</g>`;
+    machBox.setAttribute('aria-label', 'Machmeter reading Mach ' + m.toFixed(2));
+  }
+  machmeter(.95);
+
   // ---------- the window shade: the visitor lifts it themselves, by dragging, swiping, the wheel or the keyboard ----------
   // Until it is up the page holds still at the window; once it is up, scrolling takes over again.
   const shade = { v: 0, locked: false, done: false };
@@ -319,7 +347,7 @@
       set($('boom-photo'), RM ? 'none' : `scale(${1.18 - p*.16}) translateY(${p*-3}%)`);
       const n = pw.length, r = seg(p, .05, .78) * (n + 1);
       pw.forEach((w, i) => w.style.opacity = (.24 + .76 * clamp(r - i)).toFixed(3));
-      $('mach-big').textContent = lerp(.95, 1.7, ease(seg(p, .1, .9))).toFixed(2);
+      machmeter(lerp(.95, 1.7, ease(seg(p, .1, .9))));
     }
     // ---- 5 mach 2 plane
     { const p = P.mach2;

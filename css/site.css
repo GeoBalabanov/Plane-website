@@ -60,7 +60,7 @@ h1,h2,h3,p{margin:0}
 .preloader{position:fixed;inset:0;z-index:100;display:grid;place-items:center;text-align:center;background:radial-gradient(70% 60% at 50% 45%,#1d2a44 0%,#0d1424 55%,#05070d 100%);
   transition:opacity .9s var(--out),visibility 0s .9s;animation:pl-out .01s 6s forwards}
 .preloader .in{display:grid;gap:12px;justify-items:center;animation:pl-in 1s var(--out) both}
-.preloader .mark{font-size:clamp(22px,2vw,30px);font-weight:200;font-stretch:125%;letter-spacing:.02em}
+.preloader .mark{font:400 clamp(24px,2.2vw,34px)/1 'Libre Caslon Text',Georgia,serif;color:#e9dcc0}
 .is-ready .preloader{opacity:0;visibility:hidden;pointer-events:none}
 .rm .preloader{display:none}
 @keyframes pl-in{from{opacity:0;transform:translateY(10px)}}
@@ -78,7 +78,7 @@ h1,h2,h3,p{margin:0}
 .navlink .roll span::after{content:attr(data-t);position:absolute;left:0;top:100%}
 .navlink:hover::before,.navlink:focus-visible::before{opacity:.12}
 .navlink:hover .roll span,.navlink:focus-visible .roll span{transform:translateY(-100%)}
-.wordmark{display:block;padding:4px 10px;font-size:clamp(19px,1.55vw,23px);font-weight:200;font-stretch:125%;letter-spacing:.02em;line-height:1;will-change:transform}
+.wordmark{display:block;padding:4px 10px;font:400 clamp(21px,1.75vw,27px)/1 'Libre Caslon Text',Georgia,serif;letter-spacing:0;will-change:transform}   /* the serif of the Concorde posters */
 .nav .route{justify-self:end;display:flex;white-space:nowrap;gap:clamp(12px,1.6vw,24px);padding-right:10px;font-family:var(--mono);font-size:11.5px;letter-spacing:.06em}
 
 .hud,.stagebar{position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 34px);z-index:50;font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;
@@ -264,7 +264,15 @@ body.at-end .hud,body.at-end .stagebar{opacity:0}
 #boom .photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform-origin:50% 60%}
 #boom .tint{position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,28,58,.42) 0%,rgba(8,28,58,.04) 34%,rgba(12,52,104,.2) 58%,rgba(10,48,100,.72) 100%)}
 #boom .meter{position:absolute;left:var(--gutter);top:17vh;display:grid;gap:14px;justify-items:start}
-#boom .mach{font-variant-numeric:tabular-nums}
+/* the Machmeter as it hung in the cabin: a beige wall panel with a metal frame round black glass, green digits */
+.machmeter{padding:9px;border-radius:8px;background:linear-gradient(180deg,#d9d3c6,#b9b2a4);box-shadow:0 18px 40px -16px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.6)}
+.machmeter svg{display:block;height:clamp(64px,9vw,138px);width:auto;padding:12px 18px 10px;border-radius:4px;
+  background:radial-gradient(120% 90% at 30% 0%,rgba(255,255,255,.07),transparent 50%),#0a0c09;box-shadow:inset 0 0 0 2px #8f897c,inset 0 6px 18px rgba(0,0,0,.8);
+  filter:drop-shadow(0 0 0 transparent)}
+.machmeter .on{fill:#b9f52c;stroke:#b9f52c}
+.machmeter path.on{fill:none}
+.machmeter .off{fill:#b9f52c;opacity:.06}
+.machmeter svg g{filter:drop-shadow(0 0 5px rgba(170,255,40,.55))}
 .para{position:absolute;left:var(--gutter);right:var(--gutter);bottom:15vh;color:#fff;text-wrap:pretty}
 .para .w{opacity:.24;transition:opacity .25s linear}
 
