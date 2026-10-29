@@ -171,30 +171,15 @@
   }
   // droop3d.js sends { deg, air }: the angle, and whether the aircraft has left the runway
   addEventListener('concorde:nose', e => typeof e.detail === 'number' ? noseReadout(e.detail) : noseReadout(e.detail.deg, e.detail.air));
-  // the Machmeter on Concorde's cabin wall: green seven-segment digits behind black glass, reading like "M1,70"
-  const machSvg = $('mach-svg'), machBox = $('machmeter'); let machShown = '';
-  const SEG = (() => {
-    const t = 11, L = 6, R = 50, T = 6, M = 50, B = 94, g = 3;
-    const h = (x0, x1, y) => [[x0, y], [x0 + t / 2, y - t / 2], [x1 - t / 2, y - t / 2], [x1, y], [x1 - t / 2, y + t / 2], [x0 + t / 2, y + t / 2]];
-    const v = (x, y0, y1) => [[x, y0], [x + t / 2, y0 + t / 2], [x + t / 2, y1 - t / 2], [x, y1], [x - t / 2, y1 - t / 2], [x - t / 2, y0 + t / 2]];
-    return { a: h(L + g, R - g, T), b: v(R, T + g, M - g), c: v(R, M + g, B - g), d: h(L + g, R - g, B), e: v(L, M + g, B - g), f: v(L, T + g, M - g), g: h(L + g, R - g, M) };
-  })();
-  const DIG = ['abcdef', 'bc', 'abged', 'abgcd', 'fgbc', 'afgcd', 'afgedc', 'abc', 'abcdefg', 'abcdfg'];
-  const poly = (pts, x, on) => `<polygon class="${on ? 'on' : 'off'}" points="${pts.map(([a, b]) => `${(a + x).toFixed(1)},${b}`).join(' ')}"/>`;
+  // the Machmeter: Concorde's cabin display read the speed as "M1,70"; here it sits on smoked glass with a gauge from
+  // Mach 0.9 to 2.0 that marks the sound barrier
+  const machBox = $('machmeter'); let machShown = '';
   function machmeter(m) {
-    const txt = 'M' + m.toFixed(2).replace('.', ',');
+    const txt = m.toFixed(2).replace('.', ',');
     if (txt === machShown) return; machShown = txt;
-    let x = 4, out = '';
-    for (const ch of txt) {
-      if (ch === 'M') {                                          // the M: four uprights and a V from the top corners
-        out += ['b', 'c', 'e', 'f'].map(k => poly(SEG[k], x, 1)).join('') +
-          `<path class="on" d="M${x + 9} 9 L${x + 28} 44 L${x + 47} 9" fill="none" stroke-width="9" stroke-linejoin="round"/>`;
-        x += 66;
-      } else if (ch === ',') { out += `<polygon class="on" points="${x + 2},86 ${x + 12},86 ${x + 8},104 ${x - 2},104"/>`; x += 20; }
-      else { const on = DIG[+ch]; out += Object.keys(SEG).map(k => poly(SEG[k], x, on.includes(k))).join(''); x += 62; }
-    }
-    machSvg.setAttribute('viewBox', `0 0 ${x + 4} 108`);
-    machSvg.innerHTML = `<g transform="skewX(-6) translate(6 0)">${out}</g>`;
+    $('mm-num').textContent = txt;
+    $('mm-fill').style.transform = `scaleX(${clamp((m - .9) / 1.1).toFixed(4)})`;
+    const sup = m >= 1; $('mm-state').textContent = sup ? 'Supersonic' : 'Subsonic'; machBox.classList.toggle('sup', sup);
     machBox.setAttribute('aria-label', 'Machmeter reading Mach ' + m.toFixed(2));
   }
   machmeter(.95);
@@ -326,14 +311,16 @@
     }
     // ---- 3 droop: droop3d.js scrubs the nose with GSAP and reports the angle; this is only the fallback without it
     if (!window.noseDriven) { const p = P.droop; noseReadout(p < .42 ? lerp(0, 5, ease(seg(p, .1, .36))) : lerp(5, 12.5, ease(seg(p, .62, .88)))); }
-    // ---- 3 to 4: the hand-off. Above the clouds the camera rushes on towards the sun: the picture pushes in, blurs and
-    // flares, and under the brightest moment it becomes the supersonic sky. That scene sits right on top of this one
+    // ---- 3 to 4: the hand-off. Above the clouds the camera pushes on towards the sun, a warm light swells from it,
+    // and under its brightest moment the picture becomes the supersonic sky. That scene sits right on top of this one
     // and starts on the same still, then dissolves into its live clouds.
     { const tail = 1 - .8 * vh / Math.max(1, scenes[iDroop].offsetHeight - vh);   // where the flight ends and the hand-off begins
       const t = RM ? 0 : seg(P.droop, tail + .004, .995), k = ease(t);
-      const c = $('droop3d'); c.style.transform = k ? `scale(${1 + .22 * k})` : ''; c.style.filter = k ? `blur(${(k * 9).toFixed(2)}px) brightness(${(1 + .45 * k).toFixed(3)})` : '';
-      $('handoff-a').style.opacity = RM ? 0 : seg(t, .38, .72).toFixed(3);
-      $('flare').style.opacity = RM ? 0 : (Math.sin(Math.PI * seg(t, .2, .95)) * .85).toFixed(3);
+      // only transform and opacity change here: a blur on the full-screen 3D canvas made every frame stutter
+      const c = $('droop3d'); c.style.transform = k ? `scale(${(1 + .14 * k).toFixed(4)})` : '';
+      $('handoff-a').style.opacity = RM ? 0 : ease(seg(t, .3, .75)).toFixed(3);
+      $('handoff-a').style.transform = `scale(${(1.06 - .06 * ease(seg(t, .3, 1))).toFixed(4)})`;   // the sky settles into place as it arrives
+      $('flare').style.opacity = RM ? 0 : (Math.sin(Math.PI * seg(t, .15, .9)) * .7).toFixed(3);
       const ui = 1 - seg(P.droop, tail - .03, tail);
       ['factbox', 'nosepanel'].forEach(id => { $(id).style.opacity = ui; });
       const rb = rects[iBoom], arrived = rb.top <= 1;

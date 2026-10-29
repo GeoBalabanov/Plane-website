@@ -274,8 +274,12 @@
       <div class="tint"></div>
       <div class="handoff" id="handoff-b" aria-hidden="true" style="opacity:1"><img src="assets/handoff.webp" alt=""></div>
       <div class="meter" id="boom-meter">
-        <span class="label rise">Machmeter</span>
-        <div class="machmeter rise" id="machmeter" style="--d:100" role="img" aria-label="Machmeter reading Mach 0.95"><svg id="mach-svg" aria-hidden="true"></svg></div>
+        <div class="machmeter glass rise" id="machmeter" style="--d:100" role="img" aria-label="Machmeter reading Mach 0.95">
+          <div class="mm-top label"><span>Machmeter</span><span class="mm-state" id="mm-state">Subsonic</span></div>
+          <div class="mm-read" aria-hidden="true"><i>M</i><span id="mm-num">0,95</span></div>
+          <div class="mm-gauge" aria-hidden="true"><i class="mm-fill" id="mm-fill"></i><i class="mm-barrier"></i>
+            <span class="mm-sb" style="--x:.0909">1,0 · sound barrier</span><span style="--x:.5455">1,5</span><span style="--x:1">2,0</span></div>
+        </div>
       </div>
       <p class="para lead" id="para">Reheat on. Past Mach 0.95 and through the sound barrier. Breaking it makes a sonic boom, so Concorde flew supersonic only over water.</p>
     </div>
